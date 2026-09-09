@@ -1,36 +1,30 @@
+using JobTracker.Api.Data;
 using JobTracker.Api.Models;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 
 namespace JobTracker.Api.Controllers;
 
 [ApiController]
 [Route("api/applications")]
-public class ApplicationController : ControllerBase
+public class ApplicationsController : ControllerBase
 {
-    [HttpGet]
-    public ActionResult<List<JobApplication>> GetApplications()
+    private readonly AppDbContext _context;
+
+    public ApplicationsController(AppDbContext context)
     {
-        var applications = new List<JobApplication>
-        {
-            new JobApplication
-            {
-                Id = 1,
-                CompanyName = "Company A",
-                JobTitle = "Software Engineer",
-                Status = "Applied",
-                AppliedDate = new DateOnly(2023, 1, 15),
-                Notes = "Follow up in 2 weeks"
-            },
-            new JobApplication
-            {
-                Id = 2,
-                CompanyName = "Company B",
-                JobTitle = "Frontend Developer",
-                Status = "Interview Scheduled",
-                AppliedDate = new DateOnly(2023, 2, 10),
-                Notes = "Interview on March 5th"
-            }
-        };
+        _context = context;
+    }
+
+    [HttpGet]
+    public async Task<ActionResult<List<JobApplication>>> GetApplications()
+    {
+        var applications = await _context.Applications
+            .AsNoTracking()
+            .OrderByDescending(application => application.AppliedDate)
+            .ThenByDescending(application => application.Id)
+            .ToListAsync();
+
         return Ok(applications);
     }
 }
