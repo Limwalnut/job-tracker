@@ -1,5 +1,6 @@
 using JobTracker.Api.Data;
 using JobTracker.Api.Models;
+using JobTracker.Api.DTOs;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
@@ -26,5 +27,43 @@ public class ApplicationsController : ControllerBase
             .ToListAsync();
 
         return Ok(applications);
+    }
+
+    [HttpGet("{id:int}")]
+    public async Task<ActionResult<JobApplication>> GetApplication(int id)
+    {
+        var application = await _context.Applications
+            .AsNoTracking()
+            .SingleOrDefaultAsync(application => application.Id == id);
+
+        if (application == null)
+        {
+            return NotFound();
+        }
+
+        return Ok(application);
+    }
+
+    [HttpPost]
+    public async Task<ActionResult<JobApplication>> CreateApplication(
+        [FromBody] CreateApplicationRequest request
+    )
+    {
+        var application = new JobApplication
+        {
+            CompanyName = request.CompanyName.Trim(),
+            JobTitle = request.JobTitle.Trim(),
+            AppliedDate = request.AppliedDate!.Value,
+            Notes = request.Notes?.Trim(),
+            Status = "Applied"
+        };
+
+        _context.Applications.Add(application);
+        await _context.SaveChangesAsync();
+
+        return CreatedAtAction(
+            nameof(GetApplication),
+            new { id = application.Id },
+            application);
     }
 }
