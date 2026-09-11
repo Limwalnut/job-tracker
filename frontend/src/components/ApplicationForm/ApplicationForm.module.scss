@@ -1,0 +1,112 @@
+.card {
+    margin-bottom: 24px;
+    padding: 24px;
+    border: 1px solid #e2e8f0;
+    border-radius: 12px;
+    background-color: #ffffff;
+  
+    h2 {
+      margin: 0 0 20px;
+      font-size: 22px;
+    }
+  }
+  
+  .fields {
+    min-width: 0;
+    margin: 0;
+    padding: 0;
+    border: 0;
+  }
+  
+  .grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 20px;
+  }
+  
+  .field {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  
+    span {
+      font-size: 14px;
+      font-weight: 600;
+    }
+  
+    input,
+    textarea {
+      width: 100%;
+      min-width: 0;
+      padding: 10px 12px;
+      border: 1px solid #94a3b8;
+      border-radius: 6px;
+      font: inherit;
+      color: #1f2937;
+      background-color: #ffffff;
+  
+      &:focus-visible {
+        outline: 2px solid #4f46e5;
+        outline-offset: 2px;
+      }
+  
+      &:disabled {
+        background-color: #f1f5f9;
+        cursor: not-allowed;
+      }
+    }
+  
+    textarea {
+      resize: vertical;
+    }
+  }
+  
+  .fullWidth {
+    grid-column: 1 / -1;
+  }
+  
+  .submitButton {
+    margin-top: 20px;
+    padding: 11px 18px;
+    border: 0;
+    border-radius: 6px;
+    background-color: #4338ca;
+    color: #ffffff;
+    font: inherit;
+    font-weight: 600;
+    cursor: pointer;
+  
+    &:hover:not(:disabled) {
+      background-color: #3730a3;
+    }
+  
+    &:focus-visible {
+      outline: 2px solid #4f46e5;
+      outline-offset: 3px;
+    }
+  
+    &:disabled {
+      opacity: 0.65;
+      cursor: not-allowed;
+    }
+  }
+  
+  .error {
+    color: #b91c1c;
+    line-height: 1.5;
+  }
+  
+  .success {
+    color: #166534;
+    line-height: 1.5;
+  }
+  
+  @media (max-width: 600px) {
+    .card {
+      padding: 16px;
+    }
+  
+    .grid {
+      grid-template-columns: 1fr;
+    }
+  }
