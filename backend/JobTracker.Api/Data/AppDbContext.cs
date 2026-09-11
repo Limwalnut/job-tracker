@@ -11,4 +11,13 @@ public class AppDbContext : DbContext
     }
 
     public DbSet<JobApplication> Applications { get; set; }
+
+    protected override void OnModelCreating(ModelBuilder modelBuilder)
+{
+    base.OnModelCreating(modelBuilder);
+
+    modelBuilder.Entity<JobApplication>()
+        .Property(application => application.Status)
+        .HasConversion<string>();
+}
 }

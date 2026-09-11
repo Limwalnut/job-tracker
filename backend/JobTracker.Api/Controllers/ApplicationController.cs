@@ -55,7 +55,7 @@ public class ApplicationsController : ControllerBase
             JobTitle = request.JobTitle.Trim(),
             AppliedDate = request.AppliedDate!.Value,
             Notes = request.Notes?.Trim(),
-            Status = "Applied"
+            Status = ApplicationStatus.Applied
         };
 
         _context.Applications.Add(application);
@@ -65,5 +65,65 @@ public class ApplicationsController : ControllerBase
             nameof(GetApplication),
             new { id = application.Id },
             application);
+    }
+
+    [HttpPut("{id:int}")]
+    public async Task<IActionResult> UpdateApplication(
+        int id,
+        [FromBody] UpdateApplicationRequest request
+    )
+    {
+        var application = await _context.Applications.FindAsync(id);
+
+        if (application is null)
+        {
+            return NotFound();
+        }
+
+        application.CompanyName = request.CompanyName.Trim();
+        application.JobTitle = request.JobTitle.Trim();
+        application.AppliedDate = request.AppliedDate!.Value;
+        application.Notes = request.Notes?.Trim();
+
+        await _context.SaveChangesAsync();
+
+        return NoContent();
+    }
+
+    [HttpDelete("{id:int}")]
+    public async Task<IActionResult> DeleteApplication(int id)
+    {
+        var application = await _context.Applications.FindAsync(id);
+
+        if (application is null)
+        {
+            return NotFound();
+        }
+
+        _context.Applications.Remove(application);
+
+        await _context.SaveChangesAsync();
+
+        return NoContent();
+    }
+
+    [HttpPatch("{id:int}/status")]
+    public async Task<IActionResult> UpdateApplicationStatus(
+        int id,
+        [FromBody] UpdateApplicationStatusRequest request
+    )
+    {
+        var application = await _context.Applications.FindAsync(id);
+
+        if (application == null)
+        {
+            return NotFound();
+        }
+
+        application.Status = request.Status!.Value;
+
+        await _context.SaveChangesAsync();
+
+        return NoContent();
     }
 }
