@@ -1,0 +1,101 @@
+.applicationsSection {
+  padding: 24px;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  background-color: #ffffff;
+}
+
+.applicationsSection h2 {
+  margin: 0 0 16px;
+  font-size: 22px;
+}
+
+.applicationCount {
+  margin: 0 0 20px;
+  color: #64748b;
+}
+
+.tableContainer {
+  overflow-x: auto;
+}
+
+.tableContainer:focus-visible {
+  outline: 2px solid #4f46e5;
+  outline-offset: 4px;
+}
+
+.applicationsSection table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.applicationsSection th,
+.applicationsSection td {
+  padding: 16px;
+  border-bottom: 1px solid #e2e8f0;
+  text-align: left;
+}
+
+.applicationsSection th {
+  background-color: #f1f5f9;
+  font-size: 14px;
+  white-space: nowrap;
+}
+
+.applicationsSection td {
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.applicationsSection tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.applicationsSection tbody tr:hover {
+  background-color: #f8fafc;
+}
+
+.statusBadge {
+  display: inline-block;
+  padding: 4px 10px;
+  border-radius: 999px;
+  background-color: #eef2ff;
+  color: #3730a3;
+  font-size: 13px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.emptyState {
+  padding: 32px 16px;
+  text-align: center;
+}
+
+.emptyState h3 {
+  margin: 0 0 8px;
+}
+
+.emptyState p {
+  margin: 0;
+  color: #64748b;
+  line-height: 1.6;
+}
+
+.errorMessage {
+  padding: 16px;
+  border-radius: 8px;
+  background-color: #fef2f2;
+  color: #b91c1c;
+}
+
+
+@media (max-width: 600px) {
+  .applicationsSection {
+    padding: 16px;
+
+    th,
+    td {
+      padding: 12px;
+    }
+  }
+}

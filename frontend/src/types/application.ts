@@ -23,3 +23,10 @@ export interface CreateApplicationRequest {
   appliedDate: string;
   notes: string | null;
 }
+
+export interface UpdateApplicationRequest {
+  companyName: string;
+  jobTitle: string;
+  appliedDate: string;
+  notes?: string | null;
+}

@@ -1,22 +1,20 @@
+import { createApplication, updateApplication } from '../../api/applications';
 import { useState } from "react";
 import type { SubmitEvent } from "react";
-import type { CreateApplicationRequest } from "../../types/application";
+import type { CreateApplicationRequest, JobApplication } from "../../types/application";
 import styles from "./ApplicationForm.module.scss";
 
 interface ApplicationFormProps {
   onCreated: () => void;
+  application?: JobApplication;
+  onBusyChange?: (busy: boolean) => void;
 }
 
-interface ApiProblem {
-  title?: string;
-  errors?: Record<string, string[]>;
-}
-
-function ApplicationForm({ onCreated }: ApplicationFormProps) {
-  const [companyName, setCompanyName] = useState("");
-  const [jobTitle, setJobTitle] = useState("");
-  const [appliedDate, setAppliedDate] = useState("");
-  const [notes, setNotes] = useState("");
+function ApplicationForm({ onCreated, application, onBusyChange }: ApplicationFormProps) {
+  const [companyName, setCompanyName] = useState(application?.companyName ?? "");
+  const [jobTitle, setJobTitle] = useState(application?.jobTitle ?? "");
+  const [appliedDate, setAppliedDate] = useState(application?.appliedDate ?? "");
+  const [notes, setNotes] = useState(application?.notes ?? "");
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
@@ -44,30 +42,13 @@ function ApplicationForm({ onCreated }: ApplicationFormProps) {
     };
 
     setSubmitting(true);
+    onBusyChange?.(true);
 
     try {
-      const response = await fetch("/api/applications", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(request),
-      });
-
-      if (!response.ok) {
-        const problem = (await response
-          .json()
-          .catch(() => null)) as ApiProblem | null;
-
-        const validationMessages = problem?.errors
-          ? Object.values(problem.errors).flat().join(" ")
-          : "";
-
-        throw new Error(
-          validationMessages ||
-            problem?.title ||
-            `Unable to add application (HTTP ${response.status}).`
-        );
+      if (application) {
+        await updateApplication(application.id, request);
+      } else {
+        await createApplication(request);
       }
     } catch (error) {
       setError(
@@ -78,19 +59,22 @@ function ApplicationForm({ onCreated }: ApplicationFormProps) {
       return;
     } finally {
       setSubmitting(false);
+      onBusyChange?.(false);
     }
 
+    if (!application) {
     setCompanyName("");
     setJobTitle("");
     setAppliedDate("");
     setNotes("");
-    setSuccess("Application added successfully.");
+    }
+    setSuccess(application ? "Application updated successfully." : "Application added successfully.");
     onCreated();
   }
 
   return (
     <section className={styles.card} aria-labelledby="application-form-title">
-      <h2 id="application-form-title">Add Application</h2>
+      <h2 id="application-form-title">{application ? "Edit Application" : "Add Application"}</h2>
 
       <form onSubmit={handleSubmit}>
         <fieldset className={styles.fields} disabled={submitting}>
@@ -146,7 +130,7 @@ function ApplicationForm({ onCreated }: ApplicationFormProps) {
           </div>
 
           <button className={styles.submitButton} type="submit">
-            {submitting ? "Adding..." : "Add Application"}
+            {submitting ? "Saving..." : application ? "Save Changes" : "Add Application"}
           </button>
         </fieldset>
 

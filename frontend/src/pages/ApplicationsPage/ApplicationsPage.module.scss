@@ -1,0 +1,24 @@
+.page {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 48px 24px;
+}
+
+@media (max-width: 600px) {
+  .page {
+    padding: 24px 16px;
+  }
+}
+
+.summary { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; margin-bottom: 24px;
+  div { background: #eef2ff; border: 1px solid #dbe3ff; border-radius: 12px; padding: 20px; }
+  span { display: block; color: #475569; font-size: 13px; }
+  strong { display: block; font-size: 30px; margin-top: 8px; color: #312e81; }
+}
+@media (max-width: 600px) { .summary { gap: 8px; div { padding: 12px; } strong { font-size: 24px; } } }
+
+.viewSwitch { display: flex; gap: 4px; margin-bottom: 16px; padding: 4px; border-radius: 8px; background: #e2e8f0; width: fit-content;
+  button { padding: 10px 22px; font: inherit; border: 0; border-radius: 6px; color: #475569; cursor: pointer; background: transparent; }
+  button[aria-pressed='true'] { background: white; color: #3730a3; box-shadow: 0 1px 4px #0f172a15; }
+  button:focus-visible { outline: 2px solid #4338ca; outline-offset: 2px; }
+}
