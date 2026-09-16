@@ -1,3 +1,4 @@
+import StatusBadge from '../StatusBadge/StatusBadge';
 import { useState } from 'react';
 import type { JobApplication } from '../../types/application';
 import { dateKey, monthDays } from './calendar';
@@ -79,7 +80,7 @@ export default function ApplicationCalendar({ applications, loading, error, onRe
                                 onClick={() => onSelect(application.id)}>
                                 <strong>{application.companyName}</strong>
                                 <span>{application.jobTitle}</span>
-                                <small>{application.status}</small>
+                                <StatusBadge status={application.status} />
                               </button>
                             </li>
                           ))}

@@ -84,6 +84,7 @@ public class ApplicationsController : ControllerBase
         application.JobTitle = request.JobTitle.Trim();
         application.AppliedDate = request.AppliedDate!.Value;
         application.Notes = request.Notes?.Trim();
+        application.Status = request.Status!.Value;
 
         await _context.SaveChangesAsync();
 

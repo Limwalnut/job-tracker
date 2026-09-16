@@ -1,0 +1,4 @@
+.schedule { border-top: 1px solid #e2e8f0; margin-top: 24px; padding-top: 16px; [role='alert'] { color: #b91c1c; } select { padding: 10px; border: 1px solid #94a3b8; border-radius: 6px; background: white; font: inherit; } }
+.heading { display: flex; justify-content: space-between; align-items: center; gap: 12px; }
+.list { padding: 0; list-style: none; li { padding: 18px 0; border-bottom: 1px solid #e2e8f0; overflow-wrap: anywhere; } span { display: block; color: #64748b; margin-top: 6px; font-size: 13px; } p { font-size: 14px; line-height: 1.6; } }
+.notes { white-space: pre-wrap; }

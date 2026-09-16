@@ -1,16 +1,22 @@
+import { Select } from 'antd';
+import StatusBadge from '../StatusBadge/StatusBadge';
+import { applicationStatuses } from '../../types/application';
 import { createApplication, updateApplication } from '../../api/applications';
-import { useState } from "react";
+import { useId, useState } from "react";
 import type { SubmitEvent } from "react";
-import type { CreateApplicationRequest, JobApplication } from "../../types/application";
+import type { ApplicationStatus, CreateApplicationRequest, JobApplication } from "../../types/application";
 import styles from "./ApplicationForm.module.scss";
 
 interface ApplicationFormProps {
   onCreated: () => void;
   application?: JobApplication;
+  disabled?: boolean;
   onBusyChange?: (busy: boolean) => void;
 }
 
-function ApplicationForm({ onCreated, application, onBusyChange }: ApplicationFormProps) {
+function ApplicationForm({ onCreated, application, onBusyChange, disabled = false }: ApplicationFormProps) {
+  const formId = useId();
+  const [status, setStatus] = useState<ApplicationStatus>(application?.status ?? "Applied");
   const [companyName, setCompanyName] = useState(application?.companyName ?? "");
   const [jobTitle, setJobTitle] = useState(application?.jobTitle ?? "");
   const [appliedDate, setAppliedDate] = useState(application?.appliedDate ?? "");
@@ -22,7 +28,7 @@ function ApplicationForm({ onCreated, application, onBusyChange }: ApplicationFo
   async function handleSubmit(event: SubmitEvent<HTMLFormElement>) {
     event.preventDefault();
 
-    if (submitting) {
+    if (submitting || disabled) {
       return;
     }
 
@@ -46,7 +52,7 @@ function ApplicationForm({ onCreated, application, onBusyChange }: ApplicationFo
 
     try {
       if (application) {
-        await updateApplication(application.id, request);
+        await updateApplication(application.id, { ...request, status });
       } else {
         await createApplication(request);
       }
@@ -54,7 +60,7 @@ function ApplicationForm({ onCreated, application, onBusyChange }: ApplicationFo
       setError(
         error instanceof Error
           ? error.message
-          : "Unable to add application. Please try again."
+          : "Unable to save application. Please try again."
       );
       return;
     } finally {
@@ -73,16 +79,16 @@ function ApplicationForm({ onCreated, application, onBusyChange }: ApplicationFo
   }
 
   return (
-    <section className={styles.card} aria-labelledby="application-form-title">
-      <h2 id="application-form-title">{application ? "Edit Application" : "Add Application"}</h2>
+    <section className={styles.card} aria-labelledby={`${formId}-application-form-title`}>
+      <h2 id={`${formId}-application-form-title`}>{application ? "Edit Application" : "Add Application"}</h2>
 
       <form onSubmit={handleSubmit}>
-        <fieldset className={styles.fields} disabled={submitting}>
+        <fieldset className={styles.fields} disabled={submitting || disabled}>
           <div className={styles.grid}>
-            <label className={styles.field} htmlFor="company-name">
+            <label className={styles.field} htmlFor={`${formId}-company-name`}>
               <span>Company</span>
               <input
-                id="company-name"
+                id={`${formId}-company-name`}
                 type="text"
                 value={companyName}
                 onChange={(event) => setCompanyName(event.target.value)}
@@ -91,10 +97,10 @@ function ApplicationForm({ onCreated, application, onBusyChange }: ApplicationFo
               />
             </label>
 
-            <label className={styles.field} htmlFor="job-title">
+            <label className={styles.field} htmlFor={`${formId}-job-title`}>
               <span>Job Title</span>
               <input
-                id="job-title"
+                id={`${formId}-job-title`}
                 type="text"
                 value={jobTitle}
                 onChange={(event) => setJobTitle(event.target.value)}
@@ -103,10 +109,10 @@ function ApplicationForm({ onCreated, application, onBusyChange }: ApplicationFo
               />
             </label>
 
-            <label className={styles.field} htmlFor="applied-date">
+            <label className={styles.field} htmlFor={`${formId}-applied-date`}>
               <span>Applied Date</span>
               <input
-                id="applied-date"
+                id={`${formId}-applied-date`}
                 type="date"
                 value={appliedDate}
                 onChange={(event) => setAppliedDate(event.target.value)}
@@ -114,13 +120,30 @@ function ApplicationForm({ onCreated, application, onBusyChange }: ApplicationFo
               />
             </label>
 
+            {application && (
+              <div className={styles.field}>
+                <label htmlFor={`${formId}-status`}>Status</label>
+                <Select<ApplicationStatus>
+                  id={`${formId}-status`}
+                  value={status}
+                  disabled={submitting || disabled}
+                  onChange={setStatus}
+                  getPopupContainer={trigger => trigger.parentElement ?? trigger}
+                  options={applicationStatuses.map(value => ({
+                    value,
+                    label: <StatusBadge status={value} />,
+                  }))}
+                />
+              </div>
+            )}
+
             <label
               className={`${styles.field} ${styles.fullWidth}`}
-              htmlFor="notes"
+              htmlFor={`${formId}-notes`}
             >
               <span>Notes (optional)</span>
               <textarea
-                id="notes"
+                id={`${formId}-notes`}
                 value={notes}
                 onChange={(event) => setNotes(event.target.value)}
                 maxLength={2000}

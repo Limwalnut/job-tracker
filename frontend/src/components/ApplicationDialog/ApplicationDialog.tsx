@@ -1,3 +1,5 @@
+import ApplicationSchedule from '../ApplicationSchedule/ApplicationSchedule';
+import StatusBadge from '../StatusBadge/StatusBadge';
 import { useEffect, useRef, useState } from 'react';
 import { getApplication, deleteApplication } from '../../api/applications';
 import type { JobApplication } from '../../types/application';
@@ -57,19 +59,25 @@ export default function ApplicationDialog({ id, mode, onClose, onChanged }: Prop
       </div>
       {error && <p role="alert">{error}</p>}
       {!application && !error && <p role="status">Loading application...</p>}
-      {application && mode === 'edit' && <ApplicationForm application={application} onCreated={saved} onBusyChange={setBusy} />}
+      {application && mode === 'edit' && (
+        <ApplicationForm application={application} disabled={busy} onCreated={saved} onBusyChange={setBusy} />
+      )}
       {application && mode === 'view' && (
         <dl className={styles.details}>
           <dt>Company</dt><dd>{application.companyName}</dd>
           <dt>Job Title</dt><dd>{application.jobTitle}</dd>
-          <dt>Status</dt><dd>{application.status}</dd>
+          <dt>Status</dt><dd><StatusBadge status={application.status} /></dd>
           <dt>Applied Date</dt><dd>{application.appliedDate}</dd>
           <dt>Notes</dt><dd>{application.notes || 'No notes added.'}</dd>
         </dl>
       )}
+      {application && mode === 'view' && <ApplicationSchedule application={application} onBusyChange={setBusy} onChanged={() => {
+        onChanged();
+        getApplication(id).then(setApplication).catch(() => setError('Event saved, but application details could not be refreshed. Close and reopen this dialog.'));
+      }} />}
       {application && mode === 'delete' && <>
         <p>Delete the application for <strong>{application.jobTitle}</strong> at <strong>{application.companyName}</strong>?</p>
-        <p>This action cannot be undone.</p>
+        <p>All associated events will also be deleted. This action cannot be undone.</p>
         <div className={styles.actions}>
           <button type="button" disabled={busy} onClick={onClose}>Cancel</button>
           <button className={styles.danger} type="button" disabled={busy} onClick={() => void remove()}>

@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { getApplications } from '../api/applications';
-import type { ApplicationStatus, JobApplication } from '../types/application';
+import type { JobApplication } from '../types/application';
 
 export function useApplications() {
   const [applications, setApplications] = useState<JobApplication[]>([]);
@@ -47,11 +47,5 @@ export function useApplications() {
     return () => controller.abort();
   }, [refreshKey]);
 
-  function updateSavedStatus(id: number, status: ApplicationStatus) {
-    setApplications(current => current.map(application =>
-      application.id === id ? { ...application, status } : application));
-    refresh();
-  }
-
-  return { applications, loading, error, refresh, updateSavedStatus };
+  return { applications, loading, error, refresh };
 }

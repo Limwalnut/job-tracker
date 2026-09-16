@@ -1,5 +1,5 @@
 import ApplicationRow from '../ApplicationRow/ApplicationRow';
-import type { ApplicationStatus, JobApplication } from '../../types/application';
+import type { JobApplication } from '../../types/application';
 import styles from './ApplicationList.module.scss';
 
 interface ApplicationListProps {
@@ -7,11 +7,10 @@ interface ApplicationListProps {
   loading: boolean;
   error: string | null;
   onChanged: () => void;
-  onStatusSaved: (id: number, status: ApplicationStatus) => void;
   onAction: (id: number, mode: 'view' | 'edit' | 'delete') => void;
 }
 
-function ApplicationList({ applications, loading, error, onChanged, onStatusSaved, onAction }: ApplicationListProps) {
+function ApplicationList({ applications, loading, error, onChanged, onAction }: ApplicationListProps) {
   return (
       <section
         className={styles.applicationsSection}
@@ -57,7 +56,7 @@ function ApplicationList({ applications, loading, error, onChanged, onStatusSave
 
                 <tbody>
                   {applications.map((application) => (
-                    <ApplicationRow key={application.id} application={application} onStatusSaved={onStatusSaved} onAction={onAction} />
+                    <ApplicationRow key={application.id} application={application} onAction={onAction} />
                   ))}
                 </tbody>
               </table>

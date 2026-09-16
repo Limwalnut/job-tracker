@@ -1,0 +1,15 @@
+.board { padding: 24px; background: white; border: 1px solid #e2e8f0; border-radius: 12px; h2 { margin: 0; } p { color: #475569; } button { cursor: pointer; } button:focus-visible { outline: 2px solid #4338ca; outline-offset: 2px; } }
+.heading { display: flex; justify-content: space-between; gap: 16px; flex-wrap: wrap; }
+.controls { display: flex; gap: 8px; align-items: center; button { padding: 9px 12px; background: white; border: 1px solid #cbd5e1; border-radius: 6px; } }
+.filters { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; margin: 16px 0; > input, select { padding: 10px; border: 1px solid #94a3b8; border-radius: 6px; background: white; } }
+.scroll { overflow-x: auto; }
+.grid { width: 100%; min-width: 800px; table-layout: fixed; border-collapse: collapse; th { text-align: left; padding: 12px; background: #f8fafc; } td { vertical-align: top; height: 130px; padding: 8px; border: 1px solid #e2e8f0; } time { display: inline-block; padding: 5px; margin-bottom: 6px; } }
+.outside { background: #f8fafc; }
+.today { background: #4338ca; border-radius: 50%; color: white; }
+.event { display: block; width: 100%; border: 0; border-left: 3px solid; border-radius: 5px; margin-bottom: 6px; padding: 8px; text-align: left; overflow-wrap: anywhere; strong, span, small { display: block; } span { margin: 5px 0; } }
+.Interview { background: #f3e8ff; color: #6b21a8; }
+.Assessment { background: #fef3c7; color: #92400e; }
+.FollowUp { background: #dbeafe; color: #1e40af; }
+.agenda { display: grid; gap: 12px; .event { padding: 16px; } }
+.caption { text-align: left; color: #64748b; padding: 12px 0; font-size: 13px; }
+@media (max-width: 600px) { .board { padding: 16px; } }

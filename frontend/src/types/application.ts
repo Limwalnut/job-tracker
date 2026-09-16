@@ -25,8 +25,14 @@ export interface CreateApplicationRequest {
 }
 
 export interface UpdateApplicationRequest {
+  status: ApplicationStatus;
   companyName: string;
   jobTitle: string;
   appliedDate: string;
   notes?: string | null;
 }
+
+export const applicationStatuses: ApplicationStatus[] = [
+  'Applied', 'Screening', 'Assessment', 'Interviewing',
+  'Offer', 'Accepted', 'Rejected', 'Withdrawn',
+];

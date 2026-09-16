@@ -1,4 +1,4 @@
-import ApplicationCalendar from '../../components/ApplicationCalendar/ApplicationCalendar';
+import EventBoard from '../../components/EventBoard/EventBoard';
 import { useState } from 'react';
 import ApplicationDialog from '../../components/ApplicationDialog/ApplicationDialog';
 import ApplicationForm from '../../components/ApplicationForm/ApplicationForm';
@@ -8,9 +8,11 @@ import { useApplications } from '../../hooks/useApplications';
 import styles from './ApplicationsPage.module.scss';
 
 function ApplicationsPage() {
-  const { applications, loading, error, refresh, updateSavedStatus } = useApplications();
+  const { applications, loading, error, refresh } = useApplications();
 
-  const [view, setView] = useState<'list' | 'calendar'>('list');
+  const [view, setView] = useState<'list' | 'calendar' | 'upcoming'>('upcoming');
+  const [eventRevision, setEventRevision] = useState(0);
+  function refreshAll() { refresh(); setEventRevision(value => value + 1); }
   const [selected, setSelected] = useState<{ id: number; mode: 'view' | 'edit' | 'delete' } | null>(null);
 
   return (
@@ -26,21 +28,20 @@ function ApplicationsPage() {
       </div>
       <ApplicationForm onCreated={refresh} />
       <div className={styles.viewSwitch} role="group" aria-label="Application view">
+        <button type="button" aria-pressed={view === 'upcoming'} onClick={() => setView('upcoming')}>Upcoming</button>
         <button type="button" aria-pressed={view === 'list'} onClick={() => setView('list')}>List</button>
         <button type="button" aria-pressed={view === 'calendar'} onClick={() => setView('calendar')}>Calendar</button>
       </div>
-      {view === 'calendar' ? (
-        <ApplicationCalendar applications={applications} loading={loading} error={error}
-          onRetry={refresh} onSelect={id => setSelected({ id, mode: 'view' })} />
+      {view !== 'list' ? (
+        <EventBoard mode={view} revision={eventRevision} onSelect={id => setSelected({ id, mode: 'view' })} />
       ) : <ApplicationList
         applications={applications}
         loading={loading}
         error={error}
         onChanged={refresh}
-        onStatusSaved={updateSavedStatus}
         onAction={(id, mode) => setSelected({ id, mode })}
       />}
-      {selected && <ApplicationDialog key={`${selected.id}-${selected.mode}`} {...selected} onClose={() => setSelected(null)} onChanged={refresh} />}
+      {selected && <ApplicationDialog key={`${selected.id}-${selected.mode}`} {...selected} onClose={() => setSelected(null)} onChanged={refreshAll} />}
     </main>
   );
 }
