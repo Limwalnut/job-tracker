@@ -54,6 +54,7 @@ public class ApplicationsController : ControllerBase
             CompanyName = request.CompanyName.Trim(),
             JobTitle = request.JobTitle.Trim(),
             AppliedDate = request.AppliedDate!.Value,
+            JobDescription = request.JobDescription?.Trim(),
             Notes = request.Notes?.Trim(),
             Status = ApplicationStatus.Applied
         };
@@ -83,6 +84,7 @@ public class ApplicationsController : ControllerBase
         application.CompanyName = request.CompanyName.Trim();
         application.JobTitle = request.JobTitle.Trim();
         application.AppliedDate = request.AppliedDate!.Value;
+        application.JobDescription = request.JobDescription?.Trim();
         application.Notes = request.Notes?.Trim();
         application.Status = request.Status!.Value;
 

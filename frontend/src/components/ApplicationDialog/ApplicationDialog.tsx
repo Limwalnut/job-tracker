@@ -68,6 +68,7 @@ export default function ApplicationDialog({ id, mode, onClose, onChanged }: Prop
           <dt>Job Title</dt><dd>{application.jobTitle}</dd>
           <dt>Status</dt><dd><StatusBadge status={application.status} /></dd>
           <dt>Applied Date</dt><dd>{application.appliedDate}</dd>
+          <dt>Job Description</dt><dd>{application.jobDescription || 'No job description added.'}</dd>
           <dt>Notes</dt><dd>{application.notes || 'No notes added.'}</dd>
         </dl>
       )}

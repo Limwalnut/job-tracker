@@ -14,6 +14,9 @@ public class CreateApplicationRequest
     [Required]
     public DateOnly? AppliedDate { get; set; }
 
+    [StringLength(20000)]
+    public string? JobDescription { get; set; }
+
     [StringLength(2000)]
     public string? Notes { get; set; }
 }

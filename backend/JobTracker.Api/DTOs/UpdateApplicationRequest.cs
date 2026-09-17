@@ -20,6 +20,9 @@ public class UpdateApplicationRequest
     [EnumDataType(typeof(ApplicationStatus))]
     public ApplicationStatus? Status { get; set; }
 
+    [StringLength(20000)]
+    public string? JobDescription { get; set; }
+
     [StringLength(2000)]
     public string? Notes { get; set; }
 }

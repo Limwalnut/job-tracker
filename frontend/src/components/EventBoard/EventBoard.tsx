@@ -4,9 +4,15 @@ import { getEvents } from '../../api/events';
 import type { ApplicationEvent, EventType } from '../../types/event';
 import styles from './EventBoard.module.scss';
 
-interface Props { mode: 'calendar' | 'upcoming'; revision: number; onSelect: (id: number) => void; }
+interface Props {
+  mode: 'calendar' | 'upcoming';
+  revision: number;
+  onAddEvent: () => void;
+  onModeChange: (mode: 'calendar' | 'upcoming') => void;
+  onSelect: (id: number) => void;
+}
 
-export default function EventBoard({ mode, revision, onSelect }: Props) {
+export default function EventBoard({ mode, revision, onAddEvent, onModeChange, onSelect }: Props) {
   const zone = Intl.DateTimeFormat().resolvedOptions().timeZone;
   const [month, setMonth] = useState(() => DateTime.now().startOf('month'));
   const [cancelled, setCancelled] = useState(false);
@@ -51,11 +57,26 @@ export default function EventBoard({ mode, revision, onSelect }: Props) {
     <div className={styles.heading}>
       <div><h2>{mode === 'calendar' ? month.toFormat('LLLL yyyy') : 'Upcoming · Next 30 Days'}</h2>
         <p>Interview, assessment, and follow-up events · Times in {zone}</p></div>
-      {mode === 'calendar' && <div className={styles.controls}>
-        <button type="button" onClick={() => setMonth(x => x.minus({ months: 1 }))}>Previous</button>
-        <button type="button" onClick={() => setMonth(DateTime.now().startOf('month'))}>Today</button>
-        <button type="button" onClick={() => setMonth(x => x.plus({ months: 1 }))}>Next</button>
-      </div>}
+      <div className={styles.toolbar}>
+        <div className={styles.toolbarTop}>
+          <button className={styles.addButton} type="button" onClick={onAddEvent}>Add Event</button>
+          <div className={styles.modeSwitch} role="group" aria-label="Schedule view">
+            <button type="button" aria-pressed={mode === 'upcoming'} onClick={() => onModeChange('upcoming')}>
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01" /></svg>
+              Agenda
+            </button>
+            <button type="button" aria-pressed={mode === 'calendar'} onClick={() => onModeChange('calendar')}>
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 3v3m10-3v3M4 9h16M5 5h14a1 1 0 0 1 1 1v14H4V6a1 1 0 0 1 1-1Z" /></svg>
+              Calendar
+            </button>
+          </div>
+        </div>
+        {mode === 'calendar' && <div className={styles.controls}>
+          <button type="button" onClick={() => setMonth(x => x.minus({ months: 1 }))}>Previous</button>
+          <button type="button" onClick={() => setMonth(DateTime.now().startOf('month'))}>Today</button>
+          <button type="button" onClick={() => setMonth(x => x.plus({ months: 1 }))}>Next</button>
+        </div>}
+      </div>
     </div>
     <div className={styles.filters}>
       <input aria-label="Search events" placeholder="Search company, role, or event" value={search} onChange={e => setSearch(e.target.value)} />
@@ -82,9 +103,9 @@ export default function EventBoard({ mode, revision, onSelect }: Props) {
           </tr>)}</tbody>
         </table>
       </div>
-      {events.length === 0 && <p>No events in this date range. Open an application and choose Add Event.</p>}
+      {events.length === 0 && <p>No events in this date range. Add an event to schedule your next step.</p>}
     </> : <div className={styles.agenda}>
-      {events.length === 0 && <p>No upcoming events. Open an application to schedule your next step.</p>}
+      {events.length === 0 && <p>No upcoming events. Add an event to schedule your next step.</p>}
       {events.map(event => <div key={event.id}><p>{DateTime.fromISO(event.startsAt).setZone(zone).toFormat('cccc, dd LLL yyyy')}</p>{card(event)}</div>)}
     </div>}
   </section>;

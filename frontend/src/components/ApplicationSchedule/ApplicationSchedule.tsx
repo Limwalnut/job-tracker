@@ -12,7 +12,7 @@ export default function ApplicationSchedule({ application, onChanged, onBusyChan
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [revision, setRevision] = useState(0);
-  const [editing, setEditing] = useState<ApplicationEvent | 'new' | null>(null);
+  const [editing, setEditing] = useState<ApplicationEvent | null>(null);
   const [deleting, setDeleting] = useState<number | null>(null);
   const [busy, setBusy] = useState(false);
   useEffect(() => {
@@ -34,10 +34,9 @@ export default function ApplicationSchedule({ application, onChanged, onBusyChan
     finally { setSaving(false); }
   }
   return <section className={styles.schedule} aria-label="Application schedule">
-    <div className={styles.heading}><h3>Schedule</h3>
-      {!editing && <button type="button" disabled={busy} onClick={() => setEditing('new')}>Add Event</button>}</div>
+    <div className={styles.heading}><h3>Schedule</h3></div>
     {error && <p role="alert">{error} <button type="button" onClick={() => setRevision(x => x + 1)}>Retry</button></p>}
-    {editing ? <EventForm application={application} event={editing === 'new' ? undefined : editing}
+    {editing ? <EventForm application={application} event={editing}
       onSaved={changed} onCancel={() => setEditing(null)} onBusyChange={setSaving} /> : <>
       {loading && <p role="status">Loading schedule...</p>}
       {!loading && events.length === 0 && <p>No events yet. Schedule an interview, assessment, or follow-up.</p>}

@@ -22,6 +22,10 @@ public class AppDbContext : DbContext
             .Property(application => application.Status)
             .HasConversion<string>();
 
+        modelBuilder.Entity<JobApplication>()
+            .Property(application => application.JobDescription)
+            .HasMaxLength(20000);
+
         var eventEntity = modelBuilder.Entity<ApplicationEvent>();
 
         eventEntity.Property(applicationEvent => applicationEvent.Type)

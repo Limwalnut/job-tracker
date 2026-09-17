@@ -7,16 +7,20 @@ interface ApplicationListProps {
   loading: boolean;
   error: string | null;
   onChanged: () => void;
+  onAdd: () => void;
   onAction: (id: number, mode: 'view' | 'edit' | 'delete') => void;
 }
 
-function ApplicationList({ applications, loading, error, onChanged, onAction }: ApplicationListProps) {
+function ApplicationList({ applications, loading, error, onChanged, onAdd, onAction }: ApplicationListProps) {
   return (
       <section
         className={styles.applicationsSection}
         aria-labelledby="applications-title"
       >
-        <h2 id="applications-title">Applications</h2>
+        <div className={styles.heading}>
+          <h2 id="applications-title">Applications</h2>
+          <button className={styles.addButton} type="button" onClick={onAdd}>Add Application</button>
+        </div>
 
         {error && (
           <p className={styles.errorMessage} role="alert">

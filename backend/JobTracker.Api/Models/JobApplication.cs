@@ -7,5 +7,6 @@ public class JobApplication
     public required string JobTitle { get; set; }
     public ApplicationStatus Status { get; set; } = ApplicationStatus.Applied;
     public DateOnly AppliedDate { get; set; }
+    public string? JobDescription { get; set; }
     public string? Notes { get; set; }
 }

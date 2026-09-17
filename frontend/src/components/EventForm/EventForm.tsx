@@ -7,13 +7,15 @@ import type { JobApplication } from '../../types/application';
 import styles from '../ApplicationForm/ApplicationForm.module.scss';
 
 interface Props {
-  application: JobApplication;
+  application?: JobApplication;
+  applications?: JobApplication[];
   event?: ApplicationEvent;
+  hideHeading?: boolean;
   onSaved: () => void;
   onCancel: () => void;
   onBusyChange: (busy: boolean) => void;
 }
-export default function EventForm({ application, event, onSaved, onCancel, onBusyChange }: Props) {
+export default function EventForm({ application, applications = [], event, hideHeading = false, onSaved, onCancel, onBusyChange }: Props) {
   const id = useId();
   const lock = useRef(false);
   const [title, setTitle] = useState(event?.title ?? '');
@@ -28,9 +30,11 @@ export default function EventForm({ application, event, onSaved, onCancel, onBus
   const [sync, setSync] = useState(true);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const canSync = !event && (type === 'Interview'
-    ? ['Applied', 'Screening', 'Assessment', 'Interviewing'].includes(application.status)
-    : type === 'Assessment' && ['Applied', 'Screening', 'Assessment'].includes(application.status));
+  const [applicationId, setApplicationId] = useState<number | ''>(application?.id ?? '');
+  const selectedApplication = application ?? applications.find(item => item.id === applicationId);
+  const canSync = Boolean(!event && selectedApplication && (type === 'Interview'
+    ? ['Applied', 'Screening', 'Assessment', 'Interviewing'].includes(selectedApplication.status)
+    : type === 'Assessment' && ['Applied', 'Screening', 'Assessment'].includes(selectedApplication.status)));
 
   async function submit(e: SubmitEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -38,6 +42,9 @@ export default function EventForm({ application, event, onSaved, onCancel, onBus
     setError(null);
     const starts = DateTime.fromISO(start, { zone });
     const ends = DateTime.fromISO(end, { zone });
+    if (!selectedApplication) {
+      setError('Select an application for this event.'); return;
+    }
     if (!title.trim() || !starts.isValid || !ends.isValid || ends <= starts) {
       setError('Enter a title, valid time zone, and an end time after the start.'); return;
     }
@@ -55,7 +62,7 @@ export default function EventForm({ application, event, onSaved, onCancel, onBus
     };
     try {
       if (event) await updateEvent(event.id, { ...data, status });
-      else await createEvent(application.id, data);
+      else await createEvent(selectedApplication.id, data);
     } catch (error) {
       setError(error instanceof Error ? error.message : 'Unable to save event.'); return;
     } finally { lock.current = false; setBusy(false); onBusyChange(false); }
@@ -63,9 +70,14 @@ export default function EventForm({ application, event, onSaved, onCancel, onBus
   }
 
   return <form onSubmit={submit}>
-    <h3>{event ? 'Edit Event' : 'Add Event'}</h3>
+    {!hideHeading && <h3>{event ? 'Edit Event' : 'Add Event'}</h3>}
     <fieldset className={styles.fields} disabled={busy}>
       <div className={styles.grid}>
+        {!application && <label className={styles.field}>Application
+          <select required value={applicationId} onChange={e => setApplicationId(e.target.value ? Number(e.target.value) : '')}>
+            <option value="">Select an application</option>
+            {applications.map(item => <option key={item.id} value={item.id}>{item.companyName} — {item.jobTitle}</option>)}
+          </select></label>}
         <label className={styles.field} htmlFor={id + '-title'}>Title
           <input id={id + '-title'} required maxLength={200} value={title} onChange={e => setTitle(e.target.value)} /></label>
         <label className={styles.field}>Type
@@ -89,8 +101,10 @@ export default function EventForm({ application, event, onSaved, onCancel, onBus
       </div>
       {canSync && <p><label><input type="checkbox" checked={sync} onChange={e => setSync(e.target.checked)} />
         {' '}Update application status to {type === 'Interview' ? 'Interviewing' : 'Assessment'}</label></p>}
-      <button className={styles.submitButton} type="submit">{busy ? 'Saving...' : 'Save Event'}</button>
-      {' '}<button type="button" onClick={onCancel}>Cancel</button>
+      <div className={styles.formActions}>
+        <button className={styles.submitButton} type="submit">{busy ? 'Saving...' : 'Save Event'}</button>
+        <button className={styles.secondaryButton} type="button" onClick={onCancel}>Cancel</button>
+      </div>
     </fieldset>
     {error && <p role="alert" className={styles.error}>{error}</p>}
   </form>;

@@ -1,5 +1,5 @@
 import { Select } from 'antd';
-import StatusBadge from '../StatusBadge/StatusBadge';
+import { StatusOption } from '../StatusBadge/StatusBadge';
 import { applicationStatuses } from '../../types/application';
 import { createApplication, updateApplication } from '../../api/applications';
 import { useId, useState } from "react";
@@ -11,15 +11,25 @@ interface ApplicationFormProps {
   onCreated: () => void;
   application?: JobApplication;
   disabled?: boolean;
+  hideHeading?: boolean;
+  onCancel?: () => void;
   onBusyChange?: (busy: boolean) => void;
 }
 
-function ApplicationForm({ onCreated, application, onBusyChange, disabled = false }: ApplicationFormProps) {
+function ApplicationForm({ onCreated, application, hideHeading = false, onCancel, onBusyChange, disabled = false }: ApplicationFormProps) {
   const formId = useId();
+  const today = () => {
+    const now = new Date();
+    const year = now.getFullYear();
+    const month = String(now.getMonth() + 1).padStart(2, '0');
+    const day = String(now.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  };
   const [status, setStatus] = useState<ApplicationStatus>(application?.status ?? "Applied");
   const [companyName, setCompanyName] = useState(application?.companyName ?? "");
   const [jobTitle, setJobTitle] = useState(application?.jobTitle ?? "");
-  const [appliedDate, setAppliedDate] = useState(application?.appliedDate ?? "");
+  const [appliedDate, setAppliedDate] = useState(application?.appliedDate ?? today());
+  const [jobDescription, setJobDescription] = useState(application?.jobDescription ?? "");
   const [notes, setNotes] = useState(application?.notes ?? "");
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -44,6 +54,7 @@ function ApplicationForm({ onCreated, application, onBusyChange, disabled = fals
       companyName: companyName.trim(),
       jobTitle: jobTitle.trim(),
       appliedDate,
+      jobDescription: jobDescription.trim() || null,
       notes: notes.trim() || null,
     };
 
@@ -71,7 +82,8 @@ function ApplicationForm({ onCreated, application, onBusyChange, disabled = fals
     if (!application) {
     setCompanyName("");
     setJobTitle("");
-    setAppliedDate("");
+    setAppliedDate(today());
+    setJobDescription("");
     setNotes("");
     }
     setSuccess(application ? "Application updated successfully." : "Application added successfully.");
@@ -79,8 +91,8 @@ function ApplicationForm({ onCreated, application, onBusyChange, disabled = fals
   }
 
   return (
-    <section className={styles.card} aria-labelledby={`${formId}-application-form-title`}>
-      <h2 id={`${formId}-application-form-title`}>{application ? "Edit Application" : "Add Application"}</h2>
+    <section className={hideHeading ? styles.embedded : styles.card} aria-labelledby={hideHeading ? undefined : `${formId}-application-form-title`}>
+      {!hideHeading && <h2 id={`${formId}-application-form-title`}>{application ? "Edit Application" : "Add Application"}</h2>}
 
       <form onSubmit={handleSubmit}>
         <fieldset className={styles.fields} disabled={submitting || disabled}>
@@ -125,19 +137,22 @@ function ApplicationForm({ onCreated, application, onBusyChange, disabled = fals
                 <label htmlFor={`${formId}-status`}>Status</label>
                 <Select<ApplicationStatus>
                   id={`${formId}-status`}
+                  className={`${styles.statusSelect} ${styles[`status${status}`]}`}
+                  classNames={{ popup: { root: styles.statusPopup } }}
                   value={status}
+                  size="large"
                   disabled={submitting || disabled}
                   onChange={setStatus}
                   getPopupContainer={trigger => trigger.parentElement ?? trigger}
                   options={applicationStatuses.map(value => ({
                     value,
-                    label: <StatusBadge status={value} />,
+                    label: <StatusOption status={value} />,
                   }))}
                 />
               </div>
             )}
 
-            <label
+            {application && <label
               className={`${styles.field} ${styles.fullWidth}`}
               htmlFor={`${formId}-notes`}
             >
@@ -149,12 +164,31 @@ function ApplicationForm({ onCreated, application, onBusyChange, disabled = fals
                 maxLength={2000}
                 rows={3}
               />
+            </label>}
+
+            <label
+              className={`${styles.field} ${styles.fullWidth}`}
+              htmlFor={`${formId}-job-description`}
+            >
+              <span>Job Description</span>
+              <textarea
+                id={`${formId}-job-description`}
+                className={styles.jobDescription}
+                value={jobDescription}
+                onChange={(event) => setJobDescription(event.target.value)}
+                maxLength={20000}
+                rows={10}
+                placeholder="Paste the full job description here"
+              />
             </label>
           </div>
 
-          <button className={styles.submitButton} type="submit">
-            {submitting ? "Saving..." : application ? "Save Changes" : "Add Application"}
-          </button>
+          <div className={styles.formActions}>
+            <button className={styles.submitButton} type="submit">
+              {submitting ? "Saving..." : application ? "Save Changes" : "Add Application"}
+            </button>
+            {onCancel && <button className={styles.secondaryButton} type="button" onClick={onCancel}>Cancel</button>}
+          </div>
         </fieldset>
 
         {error && (

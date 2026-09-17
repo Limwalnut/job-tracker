@@ -1,5 +1,13 @@
 .board { padding: 24px; background: white; border: 1px solid #e2e8f0; border-radius: 12px; h2 { margin: 0; } p { color: #475569; } button { cursor: pointer; } button:focus-visible { outline: 2px solid #4338ca; outline-offset: 2px; } }
 .heading { display: flex; justify-content: space-between; gap: 16px; flex-wrap: wrap; }
+.toolbar { display: flex; flex-direction: column; align-items: flex-end; gap: 12px; }
+.toolbarTop { display: flex; align-items: center; gap: 10px; }
+.addButton { padding: 10px 14px; border: 1px solid #4338ca; border-radius: 7px; background: #4338ca; color: white; font: inherit; font-weight: 600; }
+.modeSwitch { display: flex; padding: 3px; border: 1px solid #cbd5e1; border-radius: 8px; background: #f1f5f9;
+  button { display: inline-flex; align-items: center; gap: 7px; padding: 8px 11px; border: 0; border-radius: 6px; background: transparent; color: #64748b; font: inherit; font-size: 14px; }
+  button[aria-pressed='true'] { background: white; color: #3730a3; box-shadow: 0 1px 3px #0f172a1f; }
+  svg { width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+}
 .controls { display: flex; gap: 8px; align-items: center; button { padding: 9px 12px; background: white; border: 1px solid #cbd5e1; border-radius: 6px; } }
 .filters { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; margin: 16px 0; > input, select { padding: 10px; border: 1px solid #94a3b8; border-radius: 6px; background: white; } }
 .scroll { overflow-x: auto; }
@@ -12,4 +20,4 @@
 .FollowUp { background: #dbeafe; color: #1e40af; }
 .agenda { display: grid; gap: 12px; .event { padding: 16px; } }
 .caption { text-align: left; color: #64748b; padding: 12px 0; font-size: 13px; }
-@media (max-width: 600px) { .board { padding: 16px; } }
+@media (max-width: 600px) { .board { padding: 16px; } .toolbar { width: 100%; align-items: stretch; } .toolbarTop { justify-content: space-between; } .controls { justify-content: flex-end; } }
