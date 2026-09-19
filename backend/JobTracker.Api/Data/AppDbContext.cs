@@ -1,9 +1,10 @@
 using JobTracker.Api.Models;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 
 namespace JobTracker.Api.Data;
 
-public class AppDbContext : DbContext
+public class AppDbContext : IdentityDbContext<ApplicationUser>
 {
     public AppDbContext(DbContextOptions<AppDbContext> options)
         : base(options)
@@ -11,6 +12,7 @@ public class AppDbContext : DbContext
     }
 
     public DbSet<JobApplication> Applications { get; set; }
+
 
     public DbSet<ApplicationEvent> ApplicationEvents { get; set; }
 
@@ -25,6 +27,15 @@ public class AppDbContext : DbContext
         modelBuilder.Entity<JobApplication>()
             .Property(application => application.JobDescription)
             .HasMaxLength(20000);
+
+        modelBuilder.Entity<JobApplication>()
+            .HasOne(application => application.User)
+            .WithMany()
+            .HasForeignKey(application => application.UserId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        modelBuilder.Entity<JobApplication>()
+            .HasIndex(application => application.UserId);
 
         var eventEntity = modelBuilder.Entity<ApplicationEvent>();
 

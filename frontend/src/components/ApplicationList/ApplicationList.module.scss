@@ -36,6 +36,10 @@
 .applicationCount {
   margin: 0 0 20px;
   color: #64748b;
+
+  span:last-child {
+    color: #94a3b8;
+  }
 }
 
 .tableContainer {
@@ -76,6 +80,21 @@
 
 .applicationsSection tbody tr:hover {
   background-color: #f8fafc;
+}
+
+.openColumn {
+  width: 52px;
+}
+
+.visuallyHidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
 }
 
 .statusBadge {

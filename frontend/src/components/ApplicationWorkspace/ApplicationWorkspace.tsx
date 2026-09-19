@@ -9,10 +9,11 @@ interface Props {
   onSelect: (id: number) => void;
   onBack: () => void;
   onEdit: (id: number) => void;
+  onDelete: (id: number) => void;
   onChanged: () => void;
 }
 
-export default function ApplicationWorkspace({ applications, selectedId, onSelect, onBack, onEdit, onChanged }: Props) {
+export default function ApplicationWorkspace({ applications, selectedId, onSelect, onBack, onEdit, onDelete, onChanged }: Props) {
   const application = applications.find(item => item.id === selectedId);
 
   if (!application) {
@@ -48,7 +49,15 @@ export default function ApplicationWorkspace({ applications, selectedId, onSelec
           <h2>{application.jobTitle}</h2>
           <p>{application.companyName}</p>
         </div>
-        <button className={styles.editButton} type="button" onClick={() => onEdit(application.id)}>Edit Application</button>
+        <div className={styles.detailsActions}>
+          <button className={styles.editButton} type="button" onClick={() => onEdit(application.id)}>Edit Application</button>
+          <details className={styles.moreMenu}>
+            <summary aria-label="More application actions">•••</summary>
+            <div className={styles.menuItems}>
+              <button type="button" onClick={() => onDelete(application.id)}>Delete application</button>
+            </div>
+          </details>
+        </div>
       </header>
 
       <div className={styles.summaryRow}>

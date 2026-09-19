@@ -72,6 +72,63 @@
 .eyebrow { color: #6366f1; font-size: 13px; font-weight: 700; letter-spacing: .04em; text-transform: uppercase; }
 .editButton { min-height: 42px; padding: 10px 14px; border: 1px solid #cbd5e1; border-radius: 7px; background: white; color: #334155; font: inherit; font-weight: 600; cursor: pointer; white-space: nowrap; }
 
+.detailsActions {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+}
+
+.moreMenu {
+  position: relative;
+
+  summary {
+    display: grid;
+    width: 42px;
+    height: 42px;
+    place-items: center;
+    border: 1px solid #cbd5e1;
+    border-radius: 7px;
+    background: #ffffff;
+    color: #475569;
+    cursor: pointer;
+    font-weight: 700;
+    letter-spacing: 2px;
+    list-style: none;
+  }
+
+  summary::-webkit-details-marker { display: none; }
+  summary:hover { background: #f8fafc; }
+  summary:focus-visible { outline: 2px solid #4f46e5; outline-offset: 2px; }
+}
+
+.menuItems {
+  position: absolute;
+  z-index: 2;
+  top: calc(100% + 8px);
+  right: 0;
+  min-width: 180px;
+  padding: 6px;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  background: #ffffff;
+  box-shadow: 0 12px 28px rgb(15 23 42 / 14%);
+
+  button {
+    width: 100%;
+    padding: 10px 12px;
+    border: 0;
+    border-radius: 6px;
+    background: transparent;
+    color: #b91c1c;
+    font: inherit;
+    text-align: left;
+    cursor: pointer;
+  }
+
+  button:hover { background: #fef2f2; }
+  button:focus-visible { outline: 2px solid #dc2626; outline-offset: -2px; }
+}
+
 .summaryRow {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -93,11 +150,13 @@
 
 .unavailable { padding: 32px; border: 1px solid #e2e8f0; border-radius: 12px; background: white; }
 
-@media (max-width: 760px) {
+@media (max-width: 900px) {
   .workspace { grid-template-columns: 1fr; }
   .sidebar { border-right: 0; border-bottom: 1px solid #e2e8f0; }
   .applicationList { display: flex; max-height: none; overflow-x: auto; }
   .applicationItem { min-width: 220px; }
   .details { padding: 20px; }
   .detailsHeading { flex-direction: column; }
+  .detailsActions { width: 100%; }
+  .editButton { flex: 1; }
 }

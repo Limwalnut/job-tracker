@@ -1,0 +1,160 @@
+$background: #202b78;
+$surface: #f1f3ea;
+$text: #17205d;
+$accent: #b9e3e5;
+$error: #a22835;
+
+.page {
+  min-height: 100vh;
+  display: grid;
+  place-items: center;
+  padding: 88px 24px 48px;
+  color: $text;
+  background:
+    radial-gradient(circle at 12% 18%, rgb(185 227 229 / 18%), transparent 26rem),
+    $background;
+}
+
+.brand {
+  position: absolute;
+  top: 28px;
+  left: clamp(24px, 5vw, 72px);
+  color: $surface;
+  font-size: 1.55rem;
+  font-weight: 500;
+  letter-spacing: -0.04em;
+  text-decoration: none;
+}
+
+.card {
+  width: min(100%, 480px);
+  padding: clamp(32px, 6vw, 56px);
+  background: $surface;
+  box-shadow: 0 24px 70px rgb(8 14 65 / 28%);
+
+  h1 {
+    margin: 0;
+    font-size: clamp(2.4rem, 7vw, 4rem);
+    font-weight: 400;
+    letter-spacing: -0.045em;
+    line-height: 1;
+  }
+}
+
+.eyebrow {
+  width: fit-content;
+  margin: 0 0 18px;
+  padding: 6px 12px;
+  border: 1px solid currentColor;
+  border-radius: 999px;
+  font-size: 0.68rem;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+}
+
+.introduction {
+  margin: 20px 0 32px;
+  color: rgb(23 32 93 / 72%);
+  line-height: 1.55;
+}
+
+.form {
+  display: grid;
+  gap: 20px;
+}
+
+.field {
+  display: grid;
+  gap: 8px;
+  font-size: 0.9rem;
+  font-weight: 600;
+
+  input {
+    width: 100%;
+    padding: 13px 14px;
+    border: 1px solid rgb(23 32 93 / 35%);
+    border-radius: 0;
+    color: $text;
+    background: #fff;
+    font: inherit;
+    font-weight: 400;
+    outline: none;
+    transition: border-color 160ms ease, box-shadow 160ms ease;
+
+    &:focus {
+      border-color: $background;
+      box-shadow: 0 0 0 3px rgb(32 43 120 / 14%);
+    }
+  }
+}
+
+.help {
+  margin: -12px 0 0;
+  color: rgb(23 32 93 / 65%);
+  font-size: 0.78rem;
+  line-height: 1.4;
+}
+
+.error {
+  margin: 0;
+  padding: 11px 13px;
+  border-left: 3px solid $error;
+  color: $error;
+  background: rgb(162 40 53 / 8%);
+  font-size: 0.88rem;
+  line-height: 1.45;
+}
+
+.submit {
+  margin-top: 4px;
+  padding: 14px 20px;
+  border: 1px solid $background;
+  color: $surface;
+  background: $background;
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+  transition: color 160ms ease, background-color 160ms ease;
+
+  &:hover:not(:disabled) {
+    color: $background;
+    background: $accent;
+  }
+
+  &:focus-visible {
+    outline: 3px solid rgb(32 43 120 / 25%);
+    outline-offset: 2px;
+  }
+
+  &:disabled {
+    cursor: wait;
+    opacity: 0.65;
+  }
+}
+
+.alternative {
+  margin: 28px 0 0;
+  font-size: 0.9rem;
+
+  a {
+    color: inherit;
+    font-weight: 700;
+    text-underline-offset: 3px;
+  }
+}
+
+@media (max-width: 520px) {
+  .page {
+    display: block;
+    padding: 76px 16px 24px;
+  }
+
+  .brand {
+    top: 22px;
+    left: 20px;
+  }
+
+  .card {
+    padding: 30px 24px;
+  }
+}

@@ -1,1 +1,42 @@
-.actions { display: flex; gap: 6px; button { padding: 7px 10px; border: 1px solid #cbd5e1; background: white; border-radius: 5px; cursor: pointer; font: inherit; } .danger { color: #b91c1c; } }
+.row {
+  cursor: pointer;
+  transition: background-color 150ms ease, box-shadow 150ms ease;
+
+  &:hover,
+  &:focus-visible {
+    background: #f8faff;
+    box-shadow: inset 3px 0 #4f46e5;
+  }
+
+  &:focus-visible {
+    outline: 2px solid #4f46e5;
+    outline-offset: -2px;
+  }
+
+  &:hover .jobTitle,
+  &:focus-visible .jobTitle {
+    color: #4338ca;
+  }
+
+  &:hover .openCell span,
+  &:focus-visible .openCell span {
+    color: #4338ca;
+    transform: translateX(3px);
+  }
+}
+
+.jobTitle {
+  transition: color 150ms ease;
+}
+
+.openCell {
+  width: 52px;
+  color: #94a3b8;
+  text-align: center;
+
+  span {
+    display: inline-block;
+    font-size: 20px;
+    transition: color 150ms ease, transform 150ms ease;
+  }
+}

@@ -8,10 +8,10 @@ interface ApplicationListProps {
   error: string | null;
   onChanged: () => void;
   onAdd: () => void;
-  onAction: (id: number, mode: 'view' | 'edit' | 'delete') => void;
+  onOpen: (id: number) => void;
 }
 
-function ApplicationList({ applications, loading, error, onChanged, onAdd, onAction }: ApplicationListProps) {
+function ApplicationList({ applications, loading, error, onChanged, onAdd, onOpen }: ApplicationListProps) {
   return (
       <section
         className={styles.applicationsSection}
@@ -39,6 +39,8 @@ function ApplicationList({ applications, loading, error, onChanged, onAdd, onAct
             <p className={styles.applicationCount}>
               {applications.length}{' '}
               {applications.length === 1 ? 'application' : 'applications'}
+              <span aria-hidden="true"> · </span>
+              <span>Select a row to view details</span>
             </p>
 
             <div
@@ -54,13 +56,15 @@ function ApplicationList({ applications, loading, error, onChanged, onAdd, onAct
                     <th scope="col">Job Title</th>
                     <th scope="col">Status</th>
                     <th scope="col">Applied Date</th>
-                    <th scope="col">Actions</th>
+                    <th scope="col" className={styles.openColumn}>
+                      <span className={styles.visuallyHidden}>Open application</span>
+                    </th>
                   </tr>
                 </thead>
 
                 <tbody>
                   {applications.map((application) => (
-                    <ApplicationRow key={application.id} application={application} onAction={onAction} />
+                    <ApplicationRow key={application.id} application={application} onOpen={onOpen} />
                   ))}
                 </tbody>
               </table>

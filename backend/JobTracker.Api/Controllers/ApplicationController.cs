@@ -3,9 +3,12 @@ using JobTracker.Api.Models;
 using JobTracker.Api.DTOs;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.AspNetCore.Authorization;
+using System.Security.Claims;
 
 namespace JobTracker.Api.Controllers;
 
+[Authorize]
 [ApiController]
 [Route("api/applications")]
 public class ApplicationsController : ControllerBase
@@ -20,8 +23,16 @@ public class ApplicationsController : ControllerBase
     [HttpGet]
     public async Task<ActionResult<List<JobApplication>>> GetApplications()
     {
+        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+
+        if (userId is null)
+        {
+            return Unauthorized();
+        }
+
         var applications = await _context.Applications
             .AsNoTracking()
+            .Where(application => application.UserId == userId)
             .OrderByDescending(application => application.AppliedDate)
             .ThenByDescending(application => application.Id)
             .ToListAsync();
@@ -32,9 +43,16 @@ public class ApplicationsController : ControllerBase
     [HttpGet("{id:int}")]
     public async Task<ActionResult<JobApplication>> GetApplication(int id)
     {
+        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+
+        if (userId is null)
+        {
+            return Unauthorized();
+        }
+
         var application = await _context.Applications
             .AsNoTracking()
-            .SingleOrDefaultAsync(application => application.Id == id);
+            .SingleOrDefaultAsync(application => application.Id == id && application.UserId == userId);
 
         if (application == null)
         {
@@ -49,8 +67,16 @@ public class ApplicationsController : ControllerBase
         [FromBody] CreateApplicationRequest request
     )
     {
+        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+
+        if (userId is null)
+        {
+            return Unauthorized();
+        }
+
         var application = new JobApplication
         {
+            UserId = userId,
             CompanyName = request.CompanyName.Trim(),
             JobTitle = request.JobTitle.Trim(),
             AppliedDate = request.AppliedDate!.Value,
@@ -74,7 +100,17 @@ public class ApplicationsController : ControllerBase
         [FromBody] UpdateApplicationRequest request
     )
     {
-        var application = await _context.Applications.FindAsync(id);
+        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+
+        if (userId is null)
+        {
+            return Unauthorized();
+        }
+
+        var application = await _context.Applications
+            .SingleOrDefaultAsync(application =>
+                application.Id == id &&
+                application.UserId == userId);
 
         if (application is null)
         {
@@ -96,7 +132,17 @@ public class ApplicationsController : ControllerBase
     [HttpDelete("{id:int}")]
     public async Task<IActionResult> DeleteApplication(int id)
     {
-        var application = await _context.Applications.FindAsync(id);
+        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+
+        if (userId is null)
+        {
+            return Unauthorized();
+        }
+
+        var application = await _context.Applications
+            .SingleOrDefaultAsync(application =>
+                application.Id == id &&
+                application.UserId == userId);
 
         if (application is null)
         {
@@ -116,9 +162,20 @@ public class ApplicationsController : ControllerBase
         [FromBody] UpdateApplicationStatusRequest request
     )
     {
-        var application = await _context.Applications.FindAsync(id);
 
-        if (application == null)
+        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+
+        if (userId is null)
+        {
+            return Unauthorized();
+        }
+
+        var application = await _context.Applications
+            .SingleOrDefaultAsync(application =>
+                application.Id == id &&
+                application.UserId == userId);
+
+        if (application is null)
         {
             return NotFound();
         }

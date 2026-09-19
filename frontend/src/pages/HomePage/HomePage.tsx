@@ -1,8 +1,12 @@
 import { Link } from 'react-router';
 import styles from './HomePage.module.scss';
 import HomePortraitCarousel from '../../components/HomePortraitCarousel/HomePortraitCarousel';
+import { useAuth } from '../../auth/useAuth';
 
 function HomePage() {
+  const { user } = useAuth();
+  const primaryDestination = user ? '/applications' : '/register';
+
   return (
     <div className={styles.page}>
       <header className={styles.header}>
@@ -18,12 +22,15 @@ function HomePage() {
           </nav>
 
           <div className={styles.accountActions}>
-            <Link className={styles.signInLink} to="/login">
-              Sign in
+            <Link
+              className={styles.signInLink}
+              to={user ? '/applications' : '/login'}
+            >
+              {user ? user.email : 'Sign in'}
             </Link>
 
-            <Link className={styles.startLink} to="/register">
-              Start free
+            <Link className={styles.startLink} to={primaryDestination}>
+              {user ? 'Open tracker' : 'Start free'}
             </Link>
           </div>
         </div>
@@ -48,8 +55,8 @@ function HomePage() {
               in one clear direction.
             </p>
 
-            <Link className={styles.heroAction} to="/register">
-              Build your path
+            <Link className={styles.heroAction} to={primaryDestination}>
+              {user ? 'Open your tracker' : 'Build your path'}
               <span aria-hidden="true">→</span>
             </Link>
           </div>

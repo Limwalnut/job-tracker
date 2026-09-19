@@ -3,9 +3,12 @@ using JobTracker.Api.DTOs;
 using JobTracker.Api.Models;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.AspNetCore.Authorization;
+using System.Security.Claims;
 
 namespace JobTracker.Api.Controllers;
 
+[Authorize]
 [ApiController]
 [Route("api/applications/{applicationId:int}/events")]
 public class ApplicationEventsController : ControllerBase
@@ -22,8 +25,17 @@ public class ApplicationEventsController : ControllerBase
         int applicationId,
         [FromBody] CreateApplicationEventRequest request)
     {
+        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+
+        if (userId is null)
+        {
+            return Unauthorized();
+        }
+
         var application = await _context.Applications
-            .FindAsync(applicationId);
+            .SingleOrDefaultAsync(application =>
+                application.Id == applicationId &&
+                application.UserId == userId);
 
         if (application is null)
         {
@@ -134,12 +146,30 @@ public class ApplicationEventsController : ControllerBase
     [HttpGet]
     public async Task<IActionResult> GetEvents(int applicationId)
     {
-        if (!await _context.Applications.AnyAsync(a => a.Id == applicationId))
+        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+
+        if (userId is null)
+        {
+            return Unauthorized();
+        }
+
+        var applicationExists = await _context.Applications
+            .AnyAsync(application =>
+                application.Id == applicationId &&
+                application.UserId == userId);
+
+        if (!applicationExists)
             return NotFound();
 
-        return Ok(await _context.ApplicationEvents.AsNoTracking()
-            .Where(e => e.ApplicationId == applicationId)
-            .OrderBy(e => e.StartsAt).ThenBy(e => e.Id)
-            .Select(ApplicationEventResponse.Projection).ToListAsync());
+        var events = await _context.ApplicationEvents
+            .AsNoTracking()
+            .Where(applicationEvent =>
+                applicationEvent.ApplicationId == applicationId)
+            .OrderBy(applicationEvent => applicationEvent.StartsAt)
+            .ThenBy(applicationEvent => applicationEvent.Id)
+            .Select(ApplicationEventResponse.Projection)
+            .ToListAsync();
+
+        return Ok(events);
     }
 }
