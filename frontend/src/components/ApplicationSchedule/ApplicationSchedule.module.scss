@@ -1,4 +1,218 @@
-.schedule { border-top: 1px solid #e2e8f0; margin-top: 24px; padding-top: 16px; [role='alert'] { color: #b91c1c; } select { padding: 10px; border: 1px solid #94a3b8; border-radius: 6px; background: white; font: inherit; } }
-.heading { display: flex; justify-content: space-between; align-items: center; gap: 12px; }
-.list { padding: 0; list-style: none; li { padding: 18px 0; border-bottom: 1px solid #e2e8f0; overflow-wrap: anywhere; } span { display: block; color: #64748b; margin-top: 6px; font-size: 13px; } p { font-size: 14px; line-height: 1.6; } }
-.notes { white-space: pre-wrap; }
+.schedule {
+  margin-top: 24px;
+
+  [role='alert'] { color: #b91c1c; }
+}
+
+.heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+
+  h3 { margin: 0; }
+}
+
+.addButton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  min-height: 36px;
+  padding: 7px 12px;
+  border: 1px solid #d8d6ff;
+  border-radius: 9px;
+  color: #4338ca;
+  background: #f4f3ff;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 750;
+  cursor: pointer;
+  transition: border-color 160ms ease, background 160ms ease, transform 160ms ease;
+
+  svg {
+    width: 16px;
+    height: 16px;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 2;
+    stroke-linecap: round;
+  }
+
+  &:hover { border-color: #b8b4ff; background: #eceaff; transform: translateY(-1px); }
+  &:focus-visible { outline: 2px solid #4338ca; outline-offset: 2px; }
+  &:disabled { opacity: .55; cursor: wait; transform: none; }
+}
+
+.eventEditor {
+  margin-top: 18px;
+  padding: 22px;
+  border: 1px solid #e2e7f1;
+  border-radius: 12px;
+  background: linear-gradient(155deg, #fbfcff 0%, #f8f9ff 100%);
+}
+
+.list {
+  display: grid;
+  gap: 12px;
+  margin: 18px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.eventCard {
+  position: relative;
+  padding: 16px 18px 15px 20px;
+  overflow: hidden;
+  border-left: 4px solid currentColor;
+  border-radius: 10px;
+  overflow-wrap: anywhere;
+
+  &[data-status='Cancelled'] {
+    color: #64748b;
+    background: #f1f5f9;
+  }
+}
+
+.Interview { color: #6b21a8; background: #f3e8ff; }
+.Assessment { color: #92400e; background: #fef3c7; }
+.FollowUp { color: #1e40af; background: #dbeafe; }
+
+.eventHeader {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 18px;
+
+  > div:first-child {
+    display: grid;
+    gap: 5px;
+    min-width: 0;
+  }
+
+  time {
+    font-size: 13px;
+    font-weight: 750;
+    letter-spacing: .01em;
+  }
+
+  strong {
+    color: currentColor;
+    font-size: 16px;
+    line-height: 1.35;
+  }
+
+  span {
+    font-size: 12px;
+    font-weight: 650;
+    opacity: .82;
+  }
+}
+
+.eventActions {
+  display: flex;
+  flex: 0 0 auto;
+  gap: 6px;
+
+  button {
+    display: grid;
+    width: 34px;
+    height: 34px;
+    place-items: center;
+    padding: 0;
+    border: 1px solid rgb(15 23 42 / 12%);
+    border-radius: 8px;
+    color: #475569;
+    background: rgb(255 255 255 / 66%);
+    cursor: pointer;
+  }
+
+  svg {
+    width: 16px;
+    height: 16px;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 1.8;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+  }
+
+  button:hover { background: #ffffff; }
+  button:focus-visible { outline: 2px solid #4338ca; outline-offset: 2px; }
+  button:disabled { opacity: .55; cursor: wait; }
+  .deleteButton { color: #b91c1c; }
+}
+
+.eventDetails {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 12px;
+  margin-top: 12px;
+  color: #475569;
+  font-size: 12px;
+}
+
+.location,
+.notes {
+  margin: 0;
+  line-height: 1.55;
+}
+
+.location {
+  a {
+    color: inherit;
+    font-weight: 700;
+    text-underline-offset: 3px;
+  }
+}
+
+.notes {
+  flex-basis: 100%;
+  white-space: pre-wrap;
+}
+
+.deleteConfirmation {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  margin-top: 14px;
+  padding-top: 12px;
+  border-top: 1px solid rgb(15 23 42 / 12%);
+
+  p { margin: 0; color: #7f1d1d; font-size: 12px; font-weight: 650; }
+  > div { display: flex; gap: 7px; }
+  > div { flex-wrap: wrap; justify-content: flex-end; }
+
+  button {
+    padding: 6px 9px;
+    border: 1px solid rgb(15 23 42 / 14%);
+    border-radius: 6px;
+    background: rgb(255 255 255 / 72%);
+    color: #475569;
+    font: inherit;
+    font-size: 11px;
+    font-weight: 650;
+    cursor: pointer;
+  }
+
+  .confirmDelete { border-color: #b91c1c; color: #b91c1c; }
+}
+
+.empty {
+  margin: 18px 0 0;
+  padding: 18px;
+  border: 1px dashed #cbd5e1;
+  border-radius: 10px;
+  color: #64748b;
+  background: #f8fafc;
+  line-height: 1.55;
+}
+
+@media (max-width: 600px) {
+  .eventEditor { padding: 18px; }
+  .eventHeader { flex-direction: column; }
+  .eventActions { position: absolute; top: 14px; right: 14px; }
+  .deleteConfirmation { align-items: flex-start; flex-direction: column; }
+}

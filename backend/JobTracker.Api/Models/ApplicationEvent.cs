@@ -19,9 +19,14 @@ public class ApplicationEvent
 
     public DateTimeOffset EndsAt { get; set; }
 
+    public bool IsAllDay { get; set; }
+
     public required string TimeZone { get; set; }
 
     public string? LocationOrLink { get; set; }
 
     public string? Notes { get; set; }
+
+    public ICollection<ApplicationStatusHistory> StatusChanges { get; set; }
+        = new List<ApplicationStatusHistory>();
 }

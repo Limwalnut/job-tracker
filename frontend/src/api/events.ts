@@ -4,8 +4,8 @@ import type { ApplicationEvent, EventRequest, EventStatus } from '../types/event
 export function getApplicationEvents(id: number, signal?: AbortSignal) {
   return requestJson<ApplicationEvent[]>(`/applications/${id}/events`, { signal });
 }
-export function getEvents(from: string, to: string, includeCancelled: boolean, signal?: AbortSignal) {
-  const query = new URLSearchParams({ from, to, includeCancelled: String(includeCancelled) });
+export function getEvents(from: string, to: string, signal?: AbortSignal) {
+  const query = new URLSearchParams({ from, to });
   return requestJson<ApplicationEvent[]>(`/events?${query}`, { signal });
 }
 export function createEvent(id: number, data: EventRequest) {
@@ -14,6 +14,7 @@ export function createEvent(id: number, data: EventRequest) {
 export function updateEvent(id: number, data: EventRequest & { status: EventStatus }) {
   return requestVoid(`/events/${id}`, { method: 'PUT', body: JSON.stringify(data) });
 }
-export function deleteEvent(id: number) {
-  return requestVoid(`/events/${id}`, { method: 'DELETE' });
+export function deleteEvent(id: number, revertApplicationStatus: boolean) {
+  const query = new URLSearchParams({ revertApplicationStatus: String(revertApplicationStatus) });
+  return requestVoid(`/events/${id}?${query}`, { method: 'DELETE' });
 }

@@ -19,6 +19,8 @@ public class CreateApplicationEventRequest : IValidatableObject
     [Required]
     public DateTimeOffset? EndsAt { get; set; }
 
+    public bool IsAllDay { get; set; }
+
     [Required]
     [StringLength(100)]
     public string TimeZone { get; set; } = string.Empty;

@@ -26,6 +26,11 @@ builder.Services.AddControllers()
             new JsonStringEnumConverter<ApplicationEventStatus>(
                 namingPolicy: null,
                 allowIntegerValues: false));
+
+        options.JsonSerializerOptions.Converters.Add(
+            new JsonStringEnumConverter<ApplicationStatusChangeSource>(
+                namingPolicy: null,
+                allowIntegerValues: false));
     });
 // Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
 builder.Services.AddOpenApi();

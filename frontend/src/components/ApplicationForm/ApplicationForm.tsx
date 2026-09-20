@@ -1,6 +1,4 @@
-import { Select } from 'antd';
-import { StatusOption } from '../StatusBadge/StatusBadge';
-import { applicationStatuses } from '../../types/application';
+import ApplicationStatusSelect from '../ApplicationStatusSelect/ApplicationStatusSelect';
 import { createApplication, updateApplication } from '../../api/applications';
 import { useId, useState } from "react";
 import type { SubmitEvent } from "react";
@@ -29,6 +27,10 @@ function ApplicationForm({ onCreated, application, hideHeading = false, onCancel
   const [companyName, setCompanyName] = useState(application?.companyName ?? "");
   const [jobTitle, setJobTitle] = useState(application?.jobTitle ?? "");
   const [appliedDate, setAppliedDate] = useState(application?.appliedDate ?? today());
+  const [jobDescriptionUrl, setJobDescriptionUrl] = useState(application?.jobDescriptionUrl ?? "");
+  const [contactName, setContactName] = useState(application?.contactName ?? "");
+  const [contactPhone, setContactPhone] = useState(application?.contactPhone ?? "");
+  const [contactEmail, setContactEmail] = useState(application?.contactEmail ?? "");
   const [jobDescription, setJobDescription] = useState(application?.jobDescription ?? "");
   const [notes, setNotes] = useState(application?.notes ?? "");
   const [submitting, setSubmitting] = useState(false);
@@ -54,6 +56,10 @@ function ApplicationForm({ onCreated, application, hideHeading = false, onCancel
       companyName: companyName.trim(),
       jobTitle: jobTitle.trim(),
       appliedDate,
+      jobDescriptionUrl: jobDescriptionUrl.trim() || null,
+      contactName: contactName.trim() || null,
+      contactPhone: contactPhone.trim() || null,
+      contactEmail: contactEmail.trim() || null,
       jobDescription: jobDescription.trim() || null,
       notes: notes.trim() || null,
     };
@@ -83,6 +89,10 @@ function ApplicationForm({ onCreated, application, hideHeading = false, onCancel
     setCompanyName("");
     setJobTitle("");
     setAppliedDate(today());
+    setJobDescriptionUrl("");
+    setContactName("");
+    setContactPhone("");
+    setContactEmail("");
     setJobDescription("");
     setNotes("");
     }
@@ -134,37 +144,68 @@ function ApplicationForm({ onCreated, application, hideHeading = false, onCancel
 
             {application && (
               <div className={styles.field}>
-                <label htmlFor={`${formId}-status`}>Status</label>
-                <Select<ApplicationStatus>
-                  id={`${formId}-status`}
-                  className={`${styles.statusSelect} ${styles[`status${status}`]}`}
-                  classNames={{ popup: { root: styles.statusPopup } }}
+                <span>Status</span>
+                <ApplicationStatusSelect
                   value={status}
-                  size="large"
                   disabled={submitting || disabled}
+                  busy={submitting || disabled}
+                  fieldSize
+                  ariaLabel="Application status"
                   onChange={setStatus}
-                  getPopupContainer={trigger => trigger.parentElement ?? trigger}
-                  options={applicationStatuses.map(value => ({
-                    value,
-                    label: <StatusOption status={value} />,
-                  }))}
                 />
               </div>
             )}
 
-            {application && <label
-              className={`${styles.field} ${styles.fullWidth}`}
-              htmlFor={`${formId}-notes`}
-            >
-              <span>Notes (optional)</span>
-              <textarea
-                id={`${formId}-notes`}
-                value={notes}
-                onChange={(event) => setNotes(event.target.value)}
+            <label className={`${styles.field} ${styles.fullWidth}`} htmlFor={`${formId}-job-description-url`}>
+              <span>Job Description Link <small>Optional</small></span>
+              <input
+                id={`${formId}-job-description-url`}
+                type="url"
+                value={jobDescriptionUrl}
+                onChange={(event) => setJobDescriptionUrl(event.target.value)}
                 maxLength={2000}
-                rows={3}
+                placeholder="https://company.com/jobs/..."
               />
-            </label>}
+            </label>
+
+            <label className={`${styles.field} ${styles.fullWidth}`} htmlFor={`${formId}-contact-name`}>
+              <span>Contact Name <small>Optional</small></span>
+              <input
+                id={`${formId}-contact-name`}
+                type="text"
+                value={contactName}
+                onChange={(event) => setContactName(event.target.value)}
+                maxLength={200}
+                autoComplete="name"
+                placeholder="e.g. Alex Morgan"
+              />
+            </label>
+
+            <label className={styles.field} htmlFor={`${formId}-contact-phone`}>
+              <span>Contact Phone <small>Optional</small></span>
+              <input
+                id={`${formId}-contact-phone`}
+                type="tel"
+                value={contactPhone}
+                onChange={(event) => setContactPhone(event.target.value)}
+                maxLength={50}
+                autoComplete="tel"
+                placeholder="e.g. +61 400 000 000"
+              />
+            </label>
+
+            <label className={styles.field} htmlFor={`${formId}-contact-email`}>
+              <span>Contact Email <small>Optional</small></span>
+              <input
+                id={`${formId}-contact-email`}
+                type="email"
+                value={contactEmail}
+                onChange={(event) => setContactEmail(event.target.value)}
+                maxLength={320}
+                autoComplete="email"
+                placeholder="recruiter@company.com"
+              />
+            </label>
 
             <label
               className={`${styles.field} ${styles.fullWidth}`}
@@ -181,6 +222,20 @@ function ApplicationForm({ onCreated, application, hideHeading = false, onCancel
                 placeholder="Paste the full job description here"
               />
             </label>
+
+            {application && <label
+              className={`${styles.field} ${styles.fullWidth}`}
+              htmlFor={`${formId}-notes`}
+            >
+              <span>Notes <small>Optional</small></span>
+              <textarea
+                id={`${formId}-notes`}
+                value={notes}
+                onChange={(event) => setNotes(event.target.value)}
+                maxLength={2000}
+                rows={3}
+              />
+            </label>}
           </div>
 
           <div className={styles.formActions}>

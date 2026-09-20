@@ -5,6 +5,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.AspNetCore.Authorization;
 using System.Security.Claims;
+using JobTracker.Api.Services;
 
 namespace JobTracker.Api.Controllers;
 
@@ -107,11 +108,21 @@ public class EventsController : ControllerBase
             return NotFound();
         }
 
+        if (request.Status == ApplicationEventStatus.Cancelled &&
+            applicationEvent.Status != ApplicationEventStatus.Cancelled)
+        {
+            return BadRequest(new ProblemDetails
+            {
+                Title = "Use the cancel action to cancel an event."
+            });
+        }
+
         applicationEvent.Title = request.Title.Trim();
         applicationEvent.Type = request.Type!.Value;
         applicationEvent.Status = request.Status!.Value;
         applicationEvent.StartsAt = request.StartsAt!.Value.ToUniversalTime();
         applicationEvent.EndsAt = request.EndsAt!.Value.ToUniversalTime();
+        applicationEvent.IsAllDay = request.IsAllDay;
         applicationEvent.TimeZone = request.TimeZone.Trim();
         applicationEvent.LocationOrLink = request.LocationOrLink?.Trim();
         applicationEvent.Notes = request.Notes?.Trim();
@@ -122,7 +133,9 @@ public class EventsController : ControllerBase
     }
 
     [HttpDelete("{id:int}")]
-    public async Task<IActionResult> DeleteEvent(int id)
+    public async Task<IActionResult> DeleteEvent(
+        int id,
+        [FromQuery] bool revertApplicationStatus = false)
     {
         var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
 
@@ -132,19 +145,30 @@ public class EventsController : ControllerBase
         }
 
         var applicationEvent = await _context.ApplicationEvents
-            .SingleOrDefaultAsync(applicationEvent =>
-                applicationEvent.Id == id &&
-                applicationEvent.Application.UserId == userId);
+            .Include(item => item.Application)
+            .SingleOrDefaultAsync(item =>
+                item.Id == id && item.Application.UserId == userId);
 
         if (applicationEvent is null)
         {
             return NotFound();
         }
 
+        if (revertApplicationStatus &&
+            !await ApplicationStatusTimeline.UndoLatestChange(
+                _context,
+                applicationEvent.Application,
+                applicationEvent.Id))
+        {
+            return Conflict(new ProblemDetails
+            {
+                Title = "The application status cannot be returned automatically.",
+                Detail = "A newer status change exists. Delete the event without changing the application status."
+            });
+        }
+
         _context.ApplicationEvents.Remove(applicationEvent);
-
         await _context.SaveChangesAsync();
-
         return NoContent();
     }
 }

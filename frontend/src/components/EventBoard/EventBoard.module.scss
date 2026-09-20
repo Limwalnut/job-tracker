@@ -1,23 +1,99 @@
 .board { padding: 24px; background: white; border: 1px solid #e2e8f0; border-radius: 12px; h2 { margin: 0; } p { color: #475569; } button { cursor: pointer; } button:focus-visible { outline: 2px solid #4338ca; outline-offset: 2px; } }
 .heading { display: flex; justify-content: space-between; gap: 16px; flex-wrap: wrap; }
 .toolbar { display: flex; flex-direction: column; align-items: flex-end; gap: 12px; }
-.toolbarTop { display: flex; align-items: center; gap: 10px; }
 .addButton { padding: 10px 14px; border: 1px solid #4338ca; border-radius: 7px; background: #4338ca; color: white; font: inherit; font-weight: 600; }
-.modeSwitch { display: flex; padding: 3px; border: 1px solid #cbd5e1; border-radius: 8px; background: #f1f5f9;
-  button { display: inline-flex; align-items: center; gap: 7px; padding: 8px 11px; border: 0; border-radius: 6px; background: transparent; color: #64748b; font: inherit; font-size: 14px; }
-  button[aria-pressed='true'] { background: white; color: #3730a3; box-shadow: 0 1px 3px #0f172a1f; }
-  svg { width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
-}
 .controls { display: flex; gap: 8px; align-items: center; button { padding: 9px 12px; background: white; border: 1px solid #cbd5e1; border-radius: 6px; } }
-.filters { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; margin: 16px 0; > input, select { padding: 10px; border: 1px solid #94a3b8; border-radius: 6px; background: white; } }
+.filters {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 18px 0;
+  padding: 8px;
+  border: 1px solid #e1e6f0;
+  border-radius: 12px;
+  background: #f7f9fc;
+}
+
+.searchFilter,
+.typeFilter {
+  display: flex;
+  height: 42px;
+  align-items: center;
+  gap: 9px;
+  padding: 0 12px;
+  border: 1px solid #d5ddea;
+  border-radius: 8px;
+  background: #ffffff;
+  transition: border-color 150ms ease, box-shadow 150ms ease;
+
+  &:focus-within {
+    border-color: #6366f1;
+    box-shadow: 0 0 0 3px rgb(99 102 241 / 12%);
+  }
+
+  svg {
+    width: 17px;
+    height: 17px;
+    flex: 0 0 auto;
+    fill: none;
+    stroke: #8994a8;
+    stroke-width: 1.8;
+    stroke-linecap: round;
+  }
+}
+
+.searchFilter {
+  min-width: 240px;
+  flex: 1;
+  max-width: 420px;
+
+  input {
+    width: 100%;
+    min-width: 0;
+    border: 0;
+    outline: 0;
+    color: #263044;
+    background: transparent;
+    font: inherit;
+    font-size: 14px;
+  }
+
+  input::placeholder { color: #9aa3b4; }
+}
+
+.typeFilter {
+  width: 190px;
+
+  select {
+    width: 100%;
+    min-width: 0;
+    border: 0;
+    outline: 0;
+    color: #344054;
+    background: transparent;
+    font: inherit;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+  }
+}
+
 .scroll { overflow-x: auto; }
 .grid { width: 100%; min-width: 800px; table-layout: fixed; border-collapse: collapse; th { text-align: left; padding: 12px; background: #f8fafc; } td { vertical-align: top; height: 130px; padding: 8px; border: 1px solid #e2e8f0; } time { display: inline-block; padding: 5px; margin-bottom: 6px; } }
 .outside { background: #f8fafc; }
 .today { background: #4338ca; border-radius: 50%; color: white; }
 .event { display: block; width: 100%; border: 0; border-left: 3px solid; border-radius: 5px; margin-bottom: 6px; padding: 8px; text-align: left; overflow-wrap: anywhere; strong, span, small { display: block; } span { margin: 5px 0; } }
+.event[data-status='Cancelled'] { color: #64748b; background: #f1f5f9; text-decoration-color: #94a3b8; }
 .Interview { background: #f3e8ff; color: #6b21a8; }
 .Assessment { background: #fef3c7; color: #92400e; }
 .FollowUp { background: #dbeafe; color: #1e40af; }
-.agenda { display: grid; gap: 12px; .event { padding: 16px; } }
 .caption { text-align: left; color: #64748b; padding: 12px 0; font-size: 13px; }
-@media (max-width: 600px) { .board { padding: 16px; } .toolbar { width: 100%; align-items: stretch; } .toolbarTop { justify-content: space-between; } .controls { justify-content: flex-end; } }
+@media (max-width: 760px) {
+  .board { padding: 16px; }
+  .toolbar { width: 100%; align-items: stretch; }
+  .controls { justify-content: flex-end; }
+  .filters { align-items: stretch; flex-direction: column; }
+  .searchFilter,
+  .typeFilter { width: 100%; max-width: none; }
+  .cancelledFilter { width: 100%; margin-left: 0; }
+}

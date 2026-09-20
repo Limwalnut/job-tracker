@@ -16,6 +16,8 @@ public class AppDbContext : IdentityDbContext<ApplicationUser>
 
     public DbSet<ApplicationEvent> ApplicationEvents { get; set; }
 
+    public DbSet<ApplicationStatusHistory> ApplicationStatusHistories { get; set; }
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);
@@ -27,6 +29,22 @@ public class AppDbContext : IdentityDbContext<ApplicationUser>
         modelBuilder.Entity<JobApplication>()
             .Property(application => application.JobDescription)
             .HasMaxLength(20000);
+
+        modelBuilder.Entity<JobApplication>()
+            .Property(application => application.JobDescriptionUrl)
+            .HasMaxLength(2000);
+
+        modelBuilder.Entity<JobApplication>()
+            .Property(application => application.ContactName)
+            .HasMaxLength(200);
+
+        modelBuilder.Entity<JobApplication>()
+            .Property(application => application.ContactPhone)
+            .HasMaxLength(50);
+
+        modelBuilder.Entity<JobApplication>()
+            .Property(application => application.ContactEmail)
+            .HasMaxLength(320);
 
         modelBuilder.Entity<JobApplication>()
             .HasOne(application => application.User)
@@ -65,5 +83,34 @@ public class AppDbContext : IdentityDbContext<ApplicationUser>
         eventEntity.HasIndex(applicationEvent => applicationEvent.ApplicationId);
 
         eventEntity.HasIndex(applicationEvent => applicationEvent.StartsAt);
+
+        var statusHistoryEntity = modelBuilder.Entity<ApplicationStatusHistory>();
+
+        statusHistoryEntity.Property(history => history.FromStatus)
+            .HasConversion<string>();
+
+        statusHistoryEntity.Property(history => history.ToStatus)
+            .HasConversion<string>();
+
+        statusHistoryEntity.Property(history => history.Source)
+            .HasConversion<string>();
+
+        statusHistoryEntity.HasOne(history => history.Application)
+            .WithMany()
+            .HasForeignKey(history => history.ApplicationId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        statusHistoryEntity.HasOne(history => history.ApplicationEvent)
+            .WithMany(applicationEvent => applicationEvent.StatusChanges)
+            .HasForeignKey(history => history.ApplicationEventId)
+            .OnDelete(DeleteBehavior.SetNull);
+
+        statusHistoryEntity.HasIndex(history => new
+        {
+            history.ApplicationId,
+            history.ChangedAt
+        });
+
+        statusHistoryEntity.HasIndex(history => history.ApplicationEventId);
     }
 }

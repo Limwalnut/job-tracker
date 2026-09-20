@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
-import { getApplications } from '../api/applications';
-import type { JobApplication } from '../types/application';
+import { getApplications, updateApplicationStatus } from '../api/applications';
+import type { ApplicationStatus, JobApplication } from '../types/application';
 
 export function useApplications() {
   const [applications, setApplications] = useState<JobApplication[]>([]);
@@ -14,6 +14,32 @@ export function useApplications() {
     activeRequest.current?.abort();
     setError(null);
     setRefreshKey((current) => current + 1);
+  }
+
+  async function changeStatus(id: number, status: ApplicationStatus) {
+    let previousStatus: ApplicationStatus | undefined;
+
+    setApplications((current) => current.map((application) => {
+      if (application.id !== id) return application;
+      previousStatus = application.status;
+      return { ...application, status };
+    }));
+
+    try {
+      await updateApplicationStatus(id, status);
+    } catch (error) {
+      const rollbackStatus = previousStatus;
+
+      if (rollbackStatus) {
+        setApplications((current) => current.map((application) =>
+          application.id === id && application.status === status
+            ? { ...application, status: rollbackStatus }
+            : application,
+        ));
+      }
+
+      throw error;
+    }
   }
 
   useEffect(() => {
@@ -47,5 +73,5 @@ export function useApplications() {
     return () => controller.abort();
   }, [refreshKey]);
 
-  return { applications, loading, error, refresh };
+  return { applications, loading, error, refresh, changeStatus };
 }

@@ -1,17 +1,20 @@
 import ApplicationRow from '../ApplicationRow/ApplicationRow';
-import type { JobApplication } from '../../types/application';
+import type { ApplicationStatus, JobApplication } from '../../types/application';
 import styles from './ApplicationList.module.scss';
 
 interface ApplicationListProps {
   applications: JobApplication[];
   loading: boolean;
   error: string | null;
+  statusError: string | null;
+  updatingStatusIds: Set<number>;
   onChanged: () => void;
   onAdd: () => void;
   onOpen: (id: number) => void;
+  onStatusChange: (id: number, status: ApplicationStatus) => Promise<void>;
 }
 
-function ApplicationList({ applications, loading, error, onChanged, onAdd, onOpen }: ApplicationListProps) {
+function ApplicationList({ applications, loading, error, statusError, updatingStatusIds, onChanged, onAdd, onOpen, onStatusChange }: ApplicationListProps) {
   return (
       <section
         className={styles.applicationsSection}
@@ -26,6 +29,9 @@ function ApplicationList({ applications, loading, error, onChanged, onAdd, onOpe
           <p className={styles.errorMessage} role="alert">
             {error} <button type="button" onClick={onChanged}>Retry</button>
           </p>
+        )}
+        {statusError && (
+          <p className={styles.errorMessage} role="alert">{statusError}</p>
         )}
         {loading ? (
           <p role="status">Loading applications...</p>
@@ -64,7 +70,13 @@ function ApplicationList({ applications, loading, error, onChanged, onAdd, onOpe
 
                 <tbody>
                   {applications.map((application) => (
-                    <ApplicationRow key={application.id} application={application} onOpen={onOpen} />
+                    <ApplicationRow
+                      key={application.id}
+                      application={application}
+                      updatingStatus={updatingStatusIds.has(application.id)}
+                      onOpen={onOpen}
+                      onStatusChange={onStatusChange}
+                    />
                   ))}
                 </tbody>
               </table>

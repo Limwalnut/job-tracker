@@ -1,6 +1,7 @@
 import { requestJson, requestVoid } from './client';
 import type {
   ApplicationStatus,
+  ApplicationStatusHistory,
   CreateApplicationRequest,
   JobApplication,
   UpdateApplicationRequest,
@@ -35,6 +36,17 @@ export function updateApplicationStatus(id: number, status: ApplicationStatus): 
     method: 'PATCH',
     body: JSON.stringify({ status }),
   });
+}
+
+export function getApplicationTimeline(
+  id: number,
+  signal?: AbortSignal,
+): Promise<ApplicationStatusHistory[]> {
+  return requestJson<ApplicationStatusHistory[]>(`${path}/${id}/timeline`, { signal });
+}
+
+export function undoLatestApplicationStatus(id: number): Promise<void> {
+  return requestVoid(`${path}/${id}/timeline/undo`, { method: 'POST' });
 }
 
 export function deleteApplication(id: number): Promise<void> {

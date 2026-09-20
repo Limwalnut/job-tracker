@@ -29,6 +29,10 @@
   transition: color 150ms ease;
 }
 
+.statusControl {
+  display: inline-block;
+}
+
 .openCell {
   width: 52px;
   color: #94a3b8;

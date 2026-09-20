@@ -19,31 +19,37 @@ import {
       id: 'software-engineer',
       role: 'Software engineer',
       image: softwareEngineerPortrait,
+      cardLabel: 'Upcoming technical interview',
     },
     {
       id: 'teacher',
       role: 'Teacher',
       image: teacherPortrait,
+      cardLabel: 'Saved application note',
     },
     {
       id: 'lawyer',
       role: 'Lawyer',
       image: lawyerPortrait,
+      cardLabel: 'Follow-up reminder',
     },
     {
       id: 'civil-engineer',
       role: 'Civil engineer',
       image: civilEngineerPortrait,
+      cardLabel: 'Assessment checklist',
     },
     {
       id: 'healthcare-professional',
       role: 'Healthcare professional',
       image: healthcarePortrait,
+      cardLabel: 'Recruiter contact',
     },
     {
       id: 'architect',
       role: 'Architect',
       image: architectPortrait,
+      cardLabel: 'Offer received',
     },
   ];
   
@@ -51,6 +57,58 @@ import {
   const slideWidthPercentage = 100 / desktopVisibleSlides;
   const autoplayDelay = 4500;
   const stageCount = 5;
+
+  function portraitCard(id: string) {
+    switch (id) {
+      case 'software-engineer':
+        return <div className={`${styles.pathCard} ${styles.interviewCard}`}>
+          <span className={styles.cardEyebrow}>Next interview</span>
+          <div className={styles.interviewDetails}>
+            <time dateTime="2026-09-24T10:30:00">
+              <strong>24</strong>
+              <span>SEP<br />TUE</span>
+            </time>
+            <div><strong>Technical interview</strong><span>10:30 AM · Online</span></div>
+          </div>
+        </div>;
+      case 'teacher':
+        return <div className={`${styles.pathCard} ${styles.noteCard}`}>
+          <span className={styles.cardEyebrow}>Private note</span>
+          <blockquote>“Ask about classroom support and mentoring.”</blockquote>
+          <span className={styles.noteMeta}>Added after screening</span>
+        </div>;
+      case 'lawyer':
+        return <div className={`${styles.pathCard} ${styles.followUpCard}`}>
+          <div className={styles.followUpIcon} aria-hidden="true">↗</div>
+          <div><span className={styles.cardEyebrow}>Follow-up</span><strong>Send thank-you note</strong></div>
+          <span className={styles.dueBadge}>Due today</span>
+        </div>;
+      case 'civil-engineer':
+        return <div className={`${styles.pathCard} ${styles.assessmentCard}`}>
+          <span className={styles.cardEyebrow}>Assessment task</span>
+          <strong>Project design exercise</strong>
+          <ul>
+            <li className={styles.taskDone}><i aria-hidden="true">✓</i> Brief reviewed</li>
+            <li><i aria-hidden="true" /> Submit by Friday</li>
+          </ul>
+        </div>;
+      case 'healthcare-professional':
+        return <div className={`${styles.pathCard} ${styles.contactCard}`}>
+          <span className={styles.cardEyebrow}>Recruiter contact</span>
+          <div className={styles.contactDetails}>
+            <span className={styles.avatar} aria-hidden="true">MR</span>
+            <div><strong>Maya Reynolds</strong><span>Talent partner</span></div>
+          </div>
+          <span className={styles.contactSaved}>Email & phone saved</span>
+        </div>;
+      default:
+        return <div className={`${styles.pathCard} ${styles.offerCard}`}>
+          <span className={styles.cardEyebrow}>Milestone</span>
+          <strong>Offer received</strong>
+          <span>Review the details by Friday</span>
+        </div>;
+    }
+  }
   
   function HomePortraitCarousel() {
     const [trackIndex, setTrackIndex] = useState(portraits.length);
@@ -58,6 +116,7 @@ import {
     const [isPaused, setIsPaused] = useState(false);
     const [isMobile, setIsMobile] = useState(false);
     const [activeStageIndex, setActiveStageIndex] = useState(0);
+    const [mobileSlideIndex, setMobileSlideIndex] = useState(0);
   
     const animationLocked = useRef(false);
   
@@ -133,6 +192,7 @@ import {
       );
 
       setActiveStageIndex(visibleSlideIndex % stageCount);
+      setMobileSlideIndex(visibleSlideIndex % portraits.length);
     };
   
     const trackStyle = isMobile
@@ -161,12 +221,20 @@ import {
             {groups.map((groupIndex) =>
               portraits.map((portrait, portraitIndex) => {
                 const isClone = groupIndex !== 1;
+                const absoluteIndex = groupIndex * portraits.length + portraitIndex;
+                const isStageActive = isMobile
+                  ? groupIndex === 1 && portraitIndex === mobileSlideIndex
+                  : absoluteIndex === trackIndex + activeStageIndex;
   
                 return (
                   <article
-                    className={styles.slide}
+                    className={`${styles.slide} ${isStageActive ? styles.stageActive : ''}`}
                     key={`${groupIndex}-${portrait.id}`}
                     aria-hidden={isClone}
+                    aria-label={isClone ? undefined : `${portrait.role}: ${portrait.cardLabel}`}
+                    tabIndex={isClone ? -1 : 0}
+                    onFocus={() => setIsPaused(true)}
+                    onBlur={() => setIsPaused(false)}
                   >
                     <img
                       src={portrait.image}
@@ -177,6 +245,7 @@ import {
                           : 'lazy'
                       }
                     />
+                    {portraitCard(portrait.id)}
                   </article>
                 );
               }),

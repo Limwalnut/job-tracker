@@ -6,6 +6,7 @@ export interface EventRequest {
   type: EventType;
   startsAt: string;
   endsAt: string;
+  isAllDay: boolean;
   timeZone: string;
   locationOrLink: string | null;
   notes: string | null;
@@ -17,4 +18,5 @@ export interface ApplicationEvent extends Omit<EventRequest, 'updateApplicationS
   companyName: string;
   jobTitle: string;
   status: EventStatus;
+  updatedApplicationStatus: boolean;
 }

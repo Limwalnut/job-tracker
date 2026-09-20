@@ -3,6 +3,7 @@ using System;
 using JobTracker.Api.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
@@ -11,9 +12,11 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace JobTracker.Api.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260920015243_AddApplicationContactDetails")]
+    partial class AddApplicationContactDetails
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -85,9 +88,6 @@ namespace JobTracker.Api.Migrations
 
                     NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
 
-                    b.Property<int?>("ApplicationEventId")
-                        .HasColumnType("integer");
-
                     b.Property<int>("ApplicationId")
                         .HasColumnType("integer");
 
@@ -96,12 +96,6 @@ namespace JobTracker.Api.Migrations
 
                     b.Property<string>("FromStatus")
                         .HasColumnType("text");
-
-                    b.Property<bool>("IsReverted")
-                        .HasColumnType("boolean");
-
-                    b.Property<DateTimeOffset?>("RevertedAt")
-                        .HasColumnType("timestamp with time zone");
 
                     b.Property<string>("Source")
                         .IsRequired()
@@ -112,8 +106,6 @@ namespace JobTracker.Api.Migrations
                         .HasColumnType("text");
 
                     b.HasKey("Id");
-
-                    b.HasIndex("ApplicationEventId");
 
                     b.HasIndex("ApplicationId", "ChangedAt");
 
@@ -202,10 +194,6 @@ namespace JobTracker.Api.Migrations
                     b.Property<string>("ContactEmail")
                         .HasMaxLength(320)
                         .HasColumnType("character varying(320)");
-
-                    b.Property<string>("ContactName")
-                        .HasMaxLength(200)
-                        .HasColumnType("character varying(200)");
 
                     b.Property<string>("ContactPhone")
                         .HasMaxLength(50)
@@ -386,11 +374,6 @@ namespace JobTracker.Api.Migrations
 
             modelBuilder.Entity("JobTracker.Api.Models.ApplicationStatusHistory", b =>
                 {
-                    b.HasOne("JobTracker.Api.Models.ApplicationEvent", "ApplicationEvent")
-                        .WithMany("StatusChanges")
-                        .HasForeignKey("ApplicationEventId")
-                        .OnDelete(DeleteBehavior.SetNull);
-
                     b.HasOne("JobTracker.Api.Models.JobApplication", "Application")
                         .WithMany()
                         .HasForeignKey("ApplicationId")
@@ -398,8 +381,6 @@ namespace JobTracker.Api.Migrations
                         .IsRequired();
 
                     b.Navigation("Application");
-
-                    b.Navigation("ApplicationEvent");
                 });
 
             modelBuilder.Entity("JobTracker.Api.Models.JobApplication", b =>
@@ -462,11 +443,6 @@ namespace JobTracker.Api.Migrations
                         .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
-                });
-
-            modelBuilder.Entity("JobTracker.Api.Models.ApplicationEvent", b =>
-                {
-                    b.Navigation("StatusChanges");
                 });
 #pragma warning restore 612, 618
         }

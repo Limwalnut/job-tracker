@@ -5,6 +5,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.AspNetCore.Authorization;
 using System.Security.Claims;
+using JobTracker.Api.Services;
 
 namespace JobTracker.Api.Controllers;
 
@@ -67,9 +68,11 @@ public class ApplicationEventsController : ControllerBase
 
         var eventType = request.Type!.Value;
 
+        ApplicationStatus? targetStatus = null;
+
         if (request.UpdateApplicationStatus)
         {
-            ApplicationStatus? targetStatus = eventType switch
+            targetStatus = eventType switch
             {
                 ApplicationEventType.Interview =>
                     ApplicationStatus.Interviewing,
@@ -115,7 +118,6 @@ public class ApplicationEventsController : ControllerBase
                 });
             }
 
-            application.Status = targetStatus.Value;
         }
 
         var applicationEvent = new ApplicationEvent
@@ -126,12 +128,23 @@ public class ApplicationEventsController : ControllerBase
             Status = ApplicationEventStatus.Scheduled,
             StartsAt = request.StartsAt!.Value.ToUniversalTime(),
             EndsAt = request.EndsAt!.Value.ToUniversalTime(),
+            IsAllDay = request.IsAllDay,
             TimeZone = timeZoneId,
             LocationOrLink = request.LocationOrLink?.Trim(),
             Notes = request.Notes?.Trim()
         };
 
         _context.ApplicationEvents.Add(applicationEvent);
+
+        if (targetStatus.HasValue)
+        {
+            ApplicationStatusTimeline.ChangeStatus(
+                _context,
+                application,
+                targetStatus.Value,
+                ApplicationStatusChangeSource.Event,
+                applicationEvent);
+        }
 
         await _context.SaveChangesAsync();
 
@@ -164,7 +177,8 @@ public class ApplicationEventsController : ControllerBase
         var events = await _context.ApplicationEvents
             .AsNoTracking()
             .Where(applicationEvent =>
-                applicationEvent.ApplicationId == applicationId)
+                applicationEvent.ApplicationId == applicationId &&
+                applicationEvent.Status != ApplicationEventStatus.Cancelled)
             .OrderBy(applicationEvent => applicationEvent.StartsAt)
             .ThenBy(applicationEvent => applicationEvent.Id)
             .Select(ApplicationEventResponse.Projection)

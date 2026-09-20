@@ -1,0 +1,145 @@
+.statusSelect {
+  min-width: 132px;
+  height: 34px;
+  color: inherit;
+
+  :global(.ant-select-selector) {
+    height: 34px !important;
+    padding: 0 32px 0 12px !important;
+    border: 1px solid transparent !important;
+    border-radius: 999px !important;
+    color: inherit !important;
+    box-shadow: none !important;
+    transition: border-color 150ms ease, box-shadow 150ms ease !important;
+  }
+
+  :global(.ant-select-content-has-value) {
+    display: flex !important;
+    height: 100% !important;
+    align-self: stretch !important;
+    align-items: center;
+    overflow: visible !important;
+    line-height: 1.4 !important;
+  }
+
+  :global(.ant-select-content-value) {
+    display: flex;
+    height: 100%;
+    align-items: center;
+    overflow: visible !important;
+  }
+
+  :global(.ant-select-arrow) { color: inherit; }
+
+  &:hover :global(.ant-select-selector) {
+    border-color: rgb(15 23 42 / 18%) !important;
+  }
+
+  &:global(.ant-select-focused) :global(.ant-select-selector) {
+    border-color: #6366f1 !important;
+    box-shadow: 0 0 0 3px rgb(99 102 241 / 14%) !important;
+  }
+
+  &:global(.ant-select-disabled) { opacity: 0.72; }
+}
+
+.fieldSize {
+  height: 42px;
+
+  :global(.ant-select-selector) {
+    height: 42px !important;
+  }
+}
+
+.Applied { color: #1e40af; :global(.ant-select-selector) { background: #dbeafe !important; } }
+.Screening { color: #155e75; :global(.ant-select-selector) { background: #cffafe !important; } }
+.Assessment { color: #92400e; :global(.ant-select-selector) { background: #fef3c7 !important; } }
+.Interviewing { color: #6b21a8; :global(.ant-select-selector) { background: #f3e8ff !important; } }
+.Offer { color: #166534; :global(.ant-select-selector) { background: #dcfce7 !important; } }
+.Accepted { color: #065f46; :global(.ant-select-selector) { background: #d1fae5 !important; } }
+.Rejected { color: #991b1b; :global(.ant-select-selector) { background: #fee2e2 !important; } }
+.Withdrawn { color: #475569; :global(.ant-select-selector) { background: #e2e8f0 !important; } }
+
+.selectedStatus,
+.statusOption {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.selectedStatus { line-height: 1.4; }
+
+.statusDot {
+  width: 7px;
+  height: 7px;
+  flex: 0 0 auto;
+  border-radius: 50%;
+}
+
+.dotApplied { background: #3b82f6; }
+.dotScreening { background: #06b6d4; }
+.dotAssessment { background: #f59e0b; }
+.dotInterviewing { background: #a855f7; }
+.dotOffer { background: #22c55e; }
+.dotAccepted { background: #059669; }
+.dotRejected { background: #ef4444; }
+.dotWithdrawn { background: #64748b; }
+
+.statusChevron {
+  display: inline-block;
+  font-size: 12px;
+  transform: translateY(-1px);
+}
+
+.statusSpinner {
+  width: 12px;
+  height: 12px;
+  border: 2px solid currentColor;
+  border-right-color: transparent;
+  border-radius: 50%;
+  animation: spin 650ms linear infinite;
+}
+
+.statusPopup {
+  padding: 8px !important;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px !important;
+  box-shadow: 0 18px 42px rgb(15 23 42 / 16%) !important;
+
+  :global(.ant-select-item-option) {
+    min-height: 36px;
+    margin: 2px 0;
+    padding: 0 !important;
+    border-radius: 8px;
+  }
+
+  :global(.ant-select-item-option-content) { width: 100%; }
+
+  :global(.ant-select-item-option-active:not(.ant-select-item-option-disabled)) {
+    background: #f5f7ff !important;
+  }
+
+  :global(.ant-select-item-option-selected:not(.ant-select-item-option-disabled)) {
+    color: #312e81;
+    background: #eef2ff !important;
+    font-weight: 650;
+  }
+}
+
+.statusOption {
+  width: 100%;
+  min-height: 36px;
+  padding: 7px 10px;
+  color: #334155;
+  font-size: 13px;
+}
+
+.statusCheck {
+  margin-left: auto;
+  color: #4f46e5;
+  font-size: 13px;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}

@@ -55,16 +55,17 @@ function ApplicationsPage() {
   const navigate = useNavigate();
   const { applicationId } = useParams<{ applicationId: string }>();
   const { user, logout } = useAuth();
-  const { applications, loading, error, refresh } = useApplications();
+  const { applications, loading, error, refresh, changeStatus } = useApplications();
   const [activeTab, setActiveTab] = useState<ActiveTab>('dashboard');
-  const [scheduleView, setScheduleView] = useState<'list' | 'calendar'>('calendar');
   const [eventRevision, setEventRevision] = useState(0);
   const [selected, setSelected] = useState<{
     id: number;
-    mode: 'view' | 'edit' | 'delete';
+    mode: 'delete';
   } | null>(null);
   const [addingApplication, setAddingApplication] = useState(false);
   const [addingEvent, setAddingEvent] = useState(false);
+  const [updatingStatusIds, setUpdatingStatusIds] = useState<Set<number>>(() => new Set());
+  const [statusError, setStatusError] = useState<string | null>(null);
 
   const parsedApplicationId = applicationId ? Number(applicationId) : null;
   const viewingApplicationId = parsedApplicationId !== null
@@ -97,10 +98,36 @@ function ApplicationsPage() {
     navigate(`/applications/${id}`);
   }
 
+  function closeApplication() {
+    setActiveTab('applications');
+    navigate('/applications');
+  }
+
   function showTab(tab: ActiveTab) {
     setActiveTab(tab);
     if (applicationId) {
       navigate('/applications');
+    }
+  }
+
+  async function handleStatusChange(id: number, status: ApplicationStatus) {
+    setStatusError(null);
+    setUpdatingStatusIds((current) => new Set(current).add(id));
+
+    try {
+      await changeStatus(id, status);
+    } catch (error) {
+      setStatusError(
+        error instanceof Error
+          ? error.message
+          : 'Unable to update application status. Please try again.',
+      );
+    } finally {
+      setUpdatingStatusIds((current) => {
+        const next = new Set(current);
+        next.delete(id);
+        return next;
+      });
     }
   }
 
@@ -276,9 +303,12 @@ function ApplicationsPage() {
                 applications={applications}
                 loading={loading}
                 error={error}
+                statusError={statusError}
+                updatingStatusIds={updatingStatusIds}
                 onChanged={refresh}
                 onAdd={() => setAddingApplication(true)}
                 onOpen={openApplication}
+                onStatusChange={handleStatusChange}
               />
             )}
             {viewingApplicationId !== null && loading && (
@@ -296,11 +326,10 @@ function ApplicationsPage() {
             )}
             {viewingApplicationId !== null && !loading && !error && (
               <ApplicationWorkspace
+                key={viewingApplicationId}
                 applications={applications}
                 selectedId={viewingApplicationId}
-                onSelect={openApplication}
-                onBack={() => navigate('/applications')}
-                onEdit={(id) => setSelected({ id, mode: 'edit' })}
+                onBack={closeApplication}
                 onDelete={(id) => setSelected({ id, mode: 'delete' })}
                 onChanged={refreshAll}
               />
@@ -311,12 +340,8 @@ function ApplicationsPage() {
         {visibleTab === 'calendar' && (
           <section className={styles.tabPanel} aria-label="Calendar">
             <EventBoard
-              mode={scheduleView === 'calendar' ? 'calendar' : 'upcoming'}
               revision={eventRevision}
               onAddEvent={() => setAddingEvent(true)}
-              onModeChange={(mode) =>
-                setScheduleView(mode === 'calendar' ? 'calendar' : 'list')
-              }
               onSelect={openApplication}
             />
           </section>

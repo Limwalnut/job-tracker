@@ -14,6 +14,21 @@ public class CreateApplicationRequest
     [Required]
     public DateOnly? AppliedDate { get; set; }
 
+    [Url]
+    [StringLength(2000)]
+    public string? JobDescriptionUrl { get; set; }
+
+    [StringLength(200)]
+    public string? ContactName { get; set; }
+
+    [Phone]
+    [StringLength(50)]
+    public string? ContactPhone { get; set; }
+
+    [EmailAddress]
+    [StringLength(320)]
+    public string? ContactEmail { get; set; }
+
     [StringLength(20000)]
     public string? JobDescription { get; set; }
 

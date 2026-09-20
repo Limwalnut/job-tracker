@@ -1,205 +1,118 @@
 .card {
-    margin-bottom: 24px;
-    padding: 24px;
-    border: 1px solid #e2e8f0;
-    border-radius: 12px;
-    background-color: #ffffff;
-  
-    h2 {
-      margin: 0 0 20px;
-      font-size: 22px;
-    }
+  margin-bottom: 24px;
+  padding: 24px;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  background: #ffffff;
+
+  h2 { margin: 0 0 20px; color: #172033; font-size: 22px; }
+}
+
+.embedded { width: 100%; }
+
+.fields {
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 20px;
+}
+
+.field {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 8px;
+
+  > span {
+    color: #263044;
+    font-size: 14px;
+    font-weight: 650;
+
+    small { color: #8a94a8; font-size: 11px; font-weight: 550; }
   }
 
-  .embedded {
+  > input,
+  > select,
+  > textarea {
     width: 100%;
-  }
-  
-  .fields {
     min-width: 0;
-    margin: 0;
-    padding: 0;
-    border: 0;
-  }
-  
-  .grid {
-    display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 20px;
-  }
-  
-  .field {
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-  
-    span {
-      font-size: 14px;
-      font-weight: 600;
-    }
-  
-    input,
-    select,
-    textarea {
-      width: 100%;
-      min-width: 0;
-      padding: 10px 12px;
-      border: 1px solid #94a3b8;
-      border-radius: 6px;
-      font: inherit;
-      color: #1f2937;
-      background-color: #ffffff;
-  
-      &:focus-visible {
-        outline: 2px solid #4f46e5;
-        outline-offset: 2px;
-      }
-  
-      &:disabled {
-        background-color: #f1f5f9;
-        cursor: not-allowed;
-      }
-    }
-
-    input,
-    select {
-      height: 42px;
-    }
-  
-    textarea {
-      min-height: 76px;
-      resize: vertical;
-    }
-
-    .jobDescription {
-      min-height: 240px;
-      line-height: 1.6;
-    }
-  }
-  
-  .fullWidth {
-    grid-column: 1 / -1;
-  }
-
-  .statusSelect {
-    width: 100%;
-
-    :global(.ant-select-selector) {
-      height: 42px !important;
-      padding: 0 32px 0 0 !important;
-      overflow: hidden;
-    }
-
-    :global(.ant-select-selection-item) {
-      display: flex;
-      width: 100%;
-      align-items: stretch;
-      padding-inline-end: 0 !important;
-    }
-  }
-
-  .statusApplied :global(.ant-select-selector) { background: #dbeafe !important; color: #1e40af; }
-  .statusScreening :global(.ant-select-selector) { background: #cffafe !important; color: #155e75; }
-  .statusAssessment :global(.ant-select-selector) { background: #fef3c7 !important; color: #92400e; }
-  .statusInterviewing :global(.ant-select-selector) { background: #f3e8ff !important; color: #6b21a8; }
-  .statusOffer :global(.ant-select-selector) { background: #dcfce7 !important; color: #166534; }
-  .statusAccepted :global(.ant-select-selector) { background: #a7f3d0 !important; color: #065f46; }
-  .statusRejected :global(.ant-select-selector) { background: #fee2e2 !important; color: #991b1b; }
-  .statusWithdrawn :global(.ant-select-selector) { background: #e2e8f0 !important; color: #475569; }
-
-  .statusPopup {
-    :global(.ant-select-item-option) {
-      margin: 3px 0;
-      padding: 0;
-      overflow: hidden;
-    }
-
-    :global(.ant-select-item-option-content) {
-      display: flex;
-      width: 100%;
-    }
-
-    :global(.ant-select-item-option-state) {
-      position: absolute;
-      right: 12px;
-      color: currentColor;
-    }
-  }
-  
-  .submitButton {
-    min-height: 42px;
-    padding: 10px 18px;
-    border: 0;
-    border-radius: 6px;
-    background-color: #4338ca;
-    color: #ffffff;
-    font: inherit;
-    font-weight: 600;
-    cursor: pointer;
-  
-    &:hover:not(:disabled) {
-      background-color: #3730a3;
-    }
-  
-    &:focus-visible {
-      outline: 2px solid #4f46e5;
-      outline-offset: 3px;
-    }
-  
-    &:disabled {
-      opacity: 0.65;
-      cursor: not-allowed;
-    }
-  }
-
-  .formActions {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    margin-top: 20px;
-
-    .submitButton {
-      margin-top: 0;
-    }
-  }
-
-  .secondaryButton {
-    min-height: 42px;
-    padding: 10px 18px;
-    border: 1px solid #cbd5e1;
-    border-radius: 6px;
+    border: 1px solid #aab6ca;
+    border-radius: 8px;
+    color: #1f2937;
     background: #ffffff;
-    color: #334155;
     font: inherit;
-    font-weight: 600;
-    cursor: pointer;
+    transition: border-color 150ms ease, box-shadow 150ms ease;
 
-    &:hover:not(:disabled) {
-      background: #f8fafc;
-    }
+    &:hover:not(:disabled) { border-color: #7d8da8; }
+    &:focus { border-color: #6366f1; outline: 0; box-shadow: 0 0 0 3px rgb(99 102 241 / 13%); }
+    &:disabled { background: #f1f5f9; cursor: not-allowed; }
+  }
 
-    &:focus-visible {
-      outline: 2px solid #4f46e5;
-      outline-offset: 3px;
-    }
+  > input,
+  > select {
+    height: 42px;
+    padding: 0 12px;
   }
-  
-  .error {
-    color: #b91c1c;
-    line-height: 1.5;
+
+  > textarea {
+    min-height: 106px;
+    padding: 11px 12px;
+    line-height: 1.55;
+    resize: vertical;
   }
-  
-  .success {
-    color: #166534;
-    line-height: 1.5;
-  }
-  
-  @media (max-width: 600px) {
-    .card {
-      padding: 16px;
-    }
-  
-    .grid {
-      grid-template-columns: 1fr;
-    }
-  }
+
+  .jobDescription { min-height: 240px; }
+}
+
+.fullWidth { grid-column: 1 / -1; }
+
+.formActions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 22px;
+}
+
+.submitButton,
+.secondaryButton {
+  min-height: 42px;
+  padding: 10px 18px;
+  border-radius: 7px;
+  font: inherit;
+  font-weight: 650;
+  cursor: pointer;
+
+  &:focus-visible { outline: 2px solid #4f46e5; outline-offset: 3px; }
+  &:disabled { opacity: .6; cursor: wait; }
+}
+
+.submitButton {
+  border: 1px solid #4338ca;
+  color: #ffffff;
+  background: #4338ca;
+
+  &:hover:not(:disabled) { background: #3730a3; }
+}
+
+.secondaryButton {
+  border: 1px solid #cbd5e1;
+  color: #334155;
+  background: #ffffff;
+
+  &:hover:not(:disabled) { background: #f8fafc; }
+}
+
+.error { margin: 16px 0 0; color: #b91c1c; line-height: 1.5; }
+.success { margin: 16px 0 0; color: #166534; line-height: 1.5; }
+
+@media (max-width: 600px) {
+  .card { padding: 16px; }
+  .grid { grid-template-columns: 1fr; }
+  .fullWidth { grid-column: auto; }
+}

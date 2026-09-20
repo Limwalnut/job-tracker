@@ -4,7 +4,7 @@ import { DateTime } from 'luxon';
 import { createEvent, updateEvent } from '../../api/events';
 import type { ApplicationEvent, EventStatus, EventType } from '../../types/event';
 import type { JobApplication } from '../../types/application';
-import styles from '../ApplicationForm/ApplicationForm.module.scss';
+import styles from './EventForm.module.scss';
 
 interface Props {
   application?: JobApplication;
@@ -15,16 +15,45 @@ interface Props {
   onCancel: () => void;
   onBusyChange: (busy: boolean) => void;
 }
+
+const defaultNames: Record<EventType, string> = {
+  Interview: 'Interview',
+  Assessment: 'Assessment deadline',
+  FollowUp: 'Follow up',
+};
+
+const durationOptions = [15, 30, 45, 60, 90, 120, 180, 240];
+
+function durationLabel(minutes: number) {
+  if (minutes < 60) return `${minutes} minutes`;
+  const hours = minutes / 60;
+  return `${hours} ${hours === 1 ? 'hour' : 'hours'}`;
+}
+
 export default function EventForm({ application, applications = [], event, hideHeading = false, onSaved, onCancel, onBusyChange }: Props) {
   const id = useId();
   const lock = useRef(false);
-  const [title, setTitle] = useState(event?.title ?? '');
+  const browserZone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+  const zone = event?.timeZone ?? browserZone;
+  const initialStart = event
+    ? DateTime.fromISO(event.startsAt).setZone(zone)
+    : DateTime.now().setZone(zone);
+  const initialDuration = event
+    ? event.isAllDay
+      ? 60
+      : Math.max(15, Math.round(DateTime.fromISO(event.endsAt).diff(DateTime.fromISO(event.startsAt), 'minutes').minutes))
+    : 60;
+  const initialDurationOptions = durationOptions.includes(initialDuration)
+    ? durationOptions
+    : [...durationOptions, initialDuration].sort((a, b) => a - b);
+
   const [type, setType] = useState<EventType>(event?.type ?? 'Interview');
+  const [eventName, setEventName] = useState(event?.title ?? defaultNames.Interview);
+  const [date, setDate] = useState(initialStart.toISODate() ?? '');
+  const [hasTime, setHasTime] = useState(event ? !event.isAllDay : false);
+  const [time, setTime] = useState(initialStart.toFormat('HH:mm'));
+  const [duration, setDuration] = useState(initialDuration);
   const [status, setStatus] = useState<EventStatus>(event?.status ?? 'Scheduled');
-  const [zone, setZone] = useState(event?.timeZone ?? Intl.DateTimeFormat().resolvedOptions().timeZone);
-  const local = (value: string) => DateTime.fromISO(value).setZone(event?.timeZone).toFormat("yyyy-MM-dd'T'HH:mm");
-  const [start, setStart] = useState(event ? local(event.startsAt) : '');
-  const [end, setEnd] = useState(event ? local(event.endsAt) : '');
   const [location, setLocation] = useState(event?.locationOrLink ?? '');
   const [notes, setNotes] = useState(event?.notes ?? '');
   const [sync, setSync] = useState(true);
@@ -36,71 +65,156 @@ export default function EventForm({ application, applications = [], event, hideH
     ? ['Applied', 'Screening', 'Assessment', 'Interviewing'].includes(selectedApplication.status)
     : type === 'Assessment' && ['Applied', 'Screening', 'Assessment'].includes(selectedApplication.status)));
 
+  function changeType(nextType: EventType) {
+    const previousDefault = defaultNames[type];
+    setType(nextType);
+    setEventName(current => !current.trim() || current === previousDefault ? defaultNames[nextType] : current);
+  }
+
   async function submit(e: SubmitEvent<HTMLFormElement>) {
     e.preventDefault();
     if (lock.current) return;
     setError(null);
-    const starts = DateTime.fromISO(start, { zone });
-    const ends = DateTime.fromISO(end, { zone });
+
     if (!selectedApplication) {
-      setError('Select an application for this event.'); return;
+      setError('Select an application for this event.');
+      return;
     }
-    if (!title.trim() || !starts.isValid || !ends.isValid || ends <= starts) {
-      setError('Enter a title, valid time zone, and an end time after the start.'); return;
+
+    if (!eventName.trim() || !date) {
+      setError('Enter an event name and date.');
+      return;
     }
-    if (starts.toFormat("yyyy-MM-dd'T'HH:mm") !== start || ends.toFormat("yyyy-MM-dd'T'HH:mm") !== end) {
-      setError('This local time does not exist due to daylight saving. Choose another time.'); return;
+
+    const starts = hasTime
+      ? DateTime.fromISO(`${date}T${time}`, { zone })
+      : DateTime.fromISO(date, { zone }).startOf('day');
+    const ends = hasTime ? starts.plus({ minutes: duration }) : starts.plus({ days: 1 });
+
+    if (!starts.isValid || !ends.isValid || (hasTime && !time)) {
+      setError('Choose a valid date and time.');
+      return;
     }
-    if (starts.getPossibleOffsets().length > 1 || ends.getPossibleOffsets().length > 1) {
-      setError('This local time is ambiguous due to daylight saving. Select UTC and enter the equivalent time.'); return;
+
+    if (hasTime && starts.toFormat("yyyy-MM-dd'T'HH:mm") !== `${date}T${time}`) {
+      setError('This local time does not exist due to daylight saving. Choose another time.');
+      return;
     }
-    lock.current = true; setBusy(true); onBusyChange(true);
+
+    if (hasTime && starts.getPossibleOffsets().length > 1) {
+      setError('This local time is ambiguous due to daylight saving. Choose another time.');
+      return;
+    }
+
+    lock.current = true;
+    setBusy(true);
+    onBusyChange(true);
+
     const data = {
-      title: title.trim(), type, startsAt: starts.toISO()!, endsAt: ends.toISO()!,
-      timeZone: zone.trim(), locationOrLink: location.trim() || null, notes: notes.trim() || null,
+      title: eventName.trim(),
+      type,
+      startsAt: starts.toISO()!,
+      endsAt: ends.toISO()!,
+      isAllDay: !hasTime,
+      timeZone: zone,
+      locationOrLink: location.trim() || null,
+      notes: notes.trim() || null,
       updateApplicationStatus: Boolean(canSync && sync),
     };
+
     try {
       if (event) await updateEvent(event.id, { ...data, status });
       else await createEvent(selectedApplication.id, data);
     } catch (error) {
-      setError(error instanceof Error ? error.message : 'Unable to save event.'); return;
-    } finally { lock.current = false; setBusy(false); onBusyChange(false); }
+      setError(error instanceof Error ? error.message : 'Unable to save event.');
+      return;
+    } finally {
+      lock.current = false;
+      setBusy(false);
+      onBusyChange(false);
+    }
+
     onSaved();
   }
 
-  return <form onSubmit={submit}>
+  return <form className={styles.form} onSubmit={submit}>
     {!hideHeading && <h3>{event ? 'Edit Event' : 'Add Event'}</h3>}
     <fieldset className={styles.fields} disabled={busy}>
       <div className={styles.grid}>
-        {!application && <label className={styles.field}>Application
-          <select required value={applicationId} onChange={e => setApplicationId(e.target.value ? Number(e.target.value) : '')}>
+        {!application && <label className={`${styles.field} ${styles.fullWidth}`} htmlFor={`${id}-application`}>
+          <span>Application</span>
+          <select id={`${id}-application`} required value={applicationId} onChange={e => setApplicationId(e.target.value ? Number(e.target.value) : '')}>
             <option value="">Select an application</option>
             {applications.map(item => <option key={item.id} value={item.id}>{item.companyName} — {item.jobTitle}</option>)}
-          </select></label>}
-        <label className={styles.field} htmlFor={id + '-title'}>Title
-          <input id={id + '-title'} required maxLength={200} value={title} onChange={e => setTitle(e.target.value)} /></label>
-        <label className={styles.field}>Type
-          <select value={type} onChange={e => setType(e.target.value as EventType)}>
-            <option>Interview</option><option>Assessment</option><option>FollowUp</option>
-          </select></label>
-        <label className={styles.field}>Start
-          <input required type="datetime-local" value={start} onChange={e => setStart(e.target.value)} /></label>
-        <label className={styles.field}>End
-          <input required type="datetime-local" value={end} onChange={e => setEnd(e.target.value)} /></label>
-        <label className={styles.field}>Time Zone
-          <input required maxLength={100} value={zone} onChange={e => setZone(e.target.value)} placeholder="Australia/Perth" /></label>
-        {event && <label className={styles.field}>Event Status
-          <select value={status} onChange={e => setStatus(e.target.value as EventStatus)}>
-            <option>Scheduled</option><option>Completed</option><option>Cancelled</option>
-          </select></label>}
-        <label className={styles.field}>Location or Meeting Link
-          <input maxLength={2000} value={location} onChange={e => setLocation(e.target.value)} /></label>
-        <label className={styles.field}>Notes
-          <textarea maxLength={4000} value={notes} onChange={e => setNotes(e.target.value)} /></label>
+          </select>
+        </label>}
+
+        <label className={styles.field} htmlFor={`${id}-type`}>
+          <span>Event Type</span>
+          <select id={`${id}-type`} value={type} onChange={e => changeType(e.target.value as EventType)}>
+            <option value="Interview">Interview</option>
+            <option value="Assessment">Assessment</option>
+            <option value="FollowUp">Follow-up</option>
+          </select>
+        </label>
+
+        <label className={styles.field} htmlFor={`${id}-name`}>
+          <span>Event Name</span>
+          <input id={`${id}-name`} required maxLength={200} value={eventName} onChange={e => setEventName(e.target.value)} placeholder="e.g. Technical interview" />
+        </label>
+
+        <label className={styles.field} htmlFor={`${id}-date`}>
+          <span>{type === 'Assessment' ? 'Due Date' : 'Date'}</span>
+          <input id={`${id}-date`} required type="date" value={date} onChange={e => setDate(e.target.value)} />
+        </label>
+
+        <label className={`${styles.timeToggle} ${hasTime ? styles.timeToggleActive : ''}`}>
+          <input type="checkbox" checked={hasTime} onChange={e => setHasTime(e.target.checked)} />
+          <span className={styles.toggleTrack} aria-hidden="true"><span /></span>
+          <span><strong>Add a specific time</strong><small>Otherwise this appears as an all-day event.</small></span>
+        </label>
+
+        {hasTime && <>
+          <label className={styles.field} htmlFor={`${id}-time`}>
+            <span>Start Time</span>
+            <input id={`${id}-time`} required type="time" value={time} onChange={e => setTime(e.target.value)} />
+          </label>
+          <label className={styles.field} htmlFor={`${id}-duration`}>
+            <span>Duration</span>
+            <select id={`${id}-duration`} value={duration} onChange={e => setDuration(Number(e.target.value))}>
+              {initialDurationOptions.map(minutes => <option key={minutes} value={minutes}>{durationLabel(minutes)}</option>)}
+            </select>
+          </label>
+        </>}
+
+        {event && <div className={`${styles.field} ${styles.fullWidth}`}>
+          <span>Event Status</span>
+          <div className={styles.statusOptions} role="group" aria-label="Event status">
+            {(['Scheduled', 'Completed'] as EventStatus[]).map(value => <button
+              key={value}
+              type="button"
+              aria-pressed={status === value}
+              onClick={() => setStatus(value)}
+            >{value}</button>)}
+          </div>
+        </div>}
+
+        <label className={`${styles.field} ${styles.fullWidth}`} htmlFor={`${id}-location`}>
+          <span>Location or Meeting Link <small>Optional</small></span>
+          <input id={`${id}-location`} maxLength={2000} value={location} onChange={e => setLocation(e.target.value)} placeholder="Paste a meeting link or enter a location" />
+        </label>
+
+        <label className={`${styles.field} ${styles.fullWidth}`} htmlFor={`${id}-notes`}>
+          <span>Notes <small>Optional</small></span>
+          <textarea id={`${id}-notes`} maxLength={4000} rows={4} value={notes} onChange={e => setNotes(e.target.value)} placeholder="Add preparation notes or reminders" />
+        </label>
       </div>
-      {canSync && <p><label><input type="checkbox" checked={sync} onChange={e => setSync(e.target.checked)} />
-        {' '}Update application status to {type === 'Interview' ? 'Interviewing' : 'Assessment'}</label></p>}
+
+      {canSync && <label className={styles.syncOption}>
+        <input type="checkbox" checked={sync} onChange={e => setSync(e.target.checked)} />
+        <span>Move application to <strong>{type === 'Interview' ? 'Interviewing' : 'Assessment'}</strong></span>
+      </label>}
+
       <div className={styles.formActions}>
         <button className={styles.submitButton} type="submit">{busy ? 'Saving...' : 'Save Event'}</button>
         <button className={styles.secondaryButton} type="button" onClick={onCancel}>Cancel</button>
