@@ -206,6 +206,7 @@ import {
     return (
       <section
         className={styles.carousel}
+        id="product"
         aria-label="Profession portrait carousel"
         onMouseEnter={() => setIsPaused(true)}
         onMouseLeave={() => setIsPaused(false)}

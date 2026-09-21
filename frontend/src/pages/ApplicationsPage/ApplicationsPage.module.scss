@@ -26,26 +26,9 @@ $text: #172033;
 }
 
 .brand {
-  display: flex;
-  align-items: center;
-  gap: 11px;
   padding: 0 10px;
   color: inherit;
-  font-size: 1.25rem;
-  font-weight: 650;
-  letter-spacing: -0.035em;
   text-decoration: none;
-}
-
-.brandMark {
-  width: 34px;
-  height: 34px;
-  display: grid;
-  place-items: center;
-  border-radius: 10px;
-  color: $sidebar;
-  background: #b9e3e5;
-  font-weight: 800;
 }
 
 .navigation {
@@ -490,7 +473,6 @@ $text: #172033;
 }
 
 @media (max-width: 560px) {
-  .brandMark,
   .avatar { display: none; }
   .navItem { gap: 7px; font-size: 0.78rem; }
   .navItem svg { width: 17px; height: 17px; }

@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router';
 import { register } from '../../api/auth';
 import { useAuth } from '../../auth/useAuth';
 import styles from '../AuthPage.module.scss';
+import BrandLogo from '../../components/BrandLogo/BrandLogo';
 
 function RegisterPage() {
   const navigate = useNavigate();
@@ -43,7 +44,7 @@ function RegisterPage() {
   return (
     <main className={styles.page}>
       <Link className={styles.brand} to="/">
-        JobTracker
+        <BrandLogo tone="light" />
       </Link>
 
       <section className={styles.card} aria-labelledby="register-title">

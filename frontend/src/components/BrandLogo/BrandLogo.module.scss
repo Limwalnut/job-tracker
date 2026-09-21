@@ -1,0 +1,73 @@
+.logo {
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+  color: var(--wordmark-color);
+  line-height: 1;
+}
+
+.mark {
+  display: grid;
+  flex: 0 0 auto;
+  width: 40px;
+  height: 40px;
+  place-items: center;
+  border-radius: 11px;
+  color: var(--mark-line-color);
+  background: var(--mark-background);
+
+  svg {
+    width: 34px;
+    height: 34px;
+    overflow: visible;
+  }
+}
+
+.letter,
+.route {
+  fill: none;
+  stroke: currentColor;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.letter { stroke-width: 3.8; }
+.route { stroke: var(--route-color); stroke-width: 2.2; }
+.routeNode { fill: var(--route-color); }
+.finalNode { fill: var(--final-node-color); stroke: var(--mark-line-color); stroke-width: 1.5; }
+
+.wordmark {
+  font-size: 1.5rem;
+  font-weight: 600;
+  letter-spacing: -0.055em;
+}
+
+.dark {
+  --wordmark-color: #202b78;
+  --mark-background: #202b78;
+  --mark-line-color: #f1f3ea;
+  --route-color: #b9e3e5;
+  --final-node-color: #d8f3e8;
+}
+
+.light {
+  --wordmark-color: #f1f3ea;
+  --mark-background: #f1f3ea;
+  --mark-line-color: #202b78;
+  --route-color: #62b8c1;
+  --final-node-color: #b9e3e5;
+}
+
+.compact {
+  gap: 10px;
+
+  .mark {
+    width: 34px;
+    height: 34px;
+    border-radius: 9px;
+
+    svg { width: 29px; height: 29px; }
+  }
+
+  .wordmark { font-size: 1.25rem; }
+}

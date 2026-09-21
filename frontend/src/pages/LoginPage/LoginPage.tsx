@@ -2,6 +2,7 @@ import { useState, type FormEvent } from 'react';
 import { Link, useNavigate } from 'react-router';
 import styles from '../AuthPage.module.scss';
 import { useAuth } from '../../auth/useAuth';
+import BrandLogo from '../../components/BrandLogo/BrandLogo';
 
 function LoginPage() {
   const navigate = useNavigate();
@@ -33,7 +34,7 @@ function LoginPage() {
   return (
     <main className={styles.page}>
       <Link className={styles.brand} to="/">
-        JobTracker
+        <BrandLogo tone="light" />
       </Link>
 
       <section className={styles.card} aria-labelledby="login-title">

@@ -7,6 +7,7 @@ import ApplicationWorkspace from '../../components/ApplicationWorkspace/Applicat
 import EventBoard from '../../components/EventBoard/EventBoard';
 import EventDialog from '../../components/EventDialog/EventDialog';
 import { useAuth } from '../../auth/useAuth';
+import BrandLogo from '../../components/BrandLogo/BrandLogo';
 import { useApplications } from '../../hooks/useApplications';
 import type { ApplicationStatus } from '../../types/application';
 import styles from './ApplicationsPage.module.scss';
@@ -142,8 +143,7 @@ function ApplicationsPage() {
     <div className={styles.appShell}>
       <aside className={styles.sidebar}>
         <Link className={styles.brand} to="/">
-          <span className={styles.brandMark} aria-hidden="true">J</span>
-          <span>JobTracker</span>
+          <BrandLogo compact tone="light" />
         </Link>
 
         <nav className={styles.navigation} aria-label="Workspace navigation">

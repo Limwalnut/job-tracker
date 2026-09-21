@@ -1,6 +1,9 @@
 import { Link } from 'react-router';
 import styles from './HomePage.module.scss';
 import HomePortraitCarousel from '../../components/HomePortraitCarousel/HomePortraitCarousel';
+import BrandLogo from '../../components/BrandLogo/BrandLogo';
+import HowItWorks from '../../components/HowItWorks/HowItWorks';
+import WhyApplyline from '../../components/WhyApplyline/WhyApplyline';
 import { useAuth } from '../../auth/useAuth';
 
 function HomePage() {
@@ -12,13 +15,13 @@ function HomePage() {
       <header className={styles.header}>
         <div className={styles.shell}>
           <Link className={styles.brand} to="/">
-            JobTracker
+            <BrandLogo tone="light" />
           </Link>
 
           <nav className={styles.navigation} aria-label="Main navigation">
             <a href="#product">Product</a>
             <a href="#how-it-works">How it works</a>
-            <a href="#stories">Stories</a>
+            <a href="#why-applyline">Why Applyline</a>
           </nav>
 
           <div className={styles.accountActions}>
@@ -30,7 +33,8 @@ function HomePage() {
             </Link>
 
             <Link className={styles.startLink} to={primaryDestination}>
-              {user ? 'Open tracker' : 'Start free'}
+              <span>{user ? 'Open tracker' : 'Start free'}</span>
+              <span className={styles.compactArrow} aria-hidden="true">→</span>
             </Link>
           </div>
         </div>
@@ -51,17 +55,21 @@ function HomePage() {
             </h1>
 
             <p className={styles.heroDescription}>
-              Track applications, interviews and every next step—all moving
-              in one clear direction.
+              Track applications, interviews and every next step—all moving in one clear direction.
             </p>
 
             <Link className={styles.heroAction} to={primaryDestination}>
-              {user ? 'Open your tracker' : 'Build your path'}
-              <span aria-hidden="true">→</span>
+              <span>{user ? 'Open your tracker' : 'Build your path'}</span>
+              <span className={styles.actionArrow} aria-hidden="true">→</span>
             </Link>
           </div>
         </section>
         <HomePortraitCarousel />
+        <HowItWorks />
+        <WhyApplyline
+          ctaDestination={primaryDestination}
+          ctaLabel={user ? 'Open your tracker' : 'Build your path'}
+        />
       </main>
     </div>
   );
