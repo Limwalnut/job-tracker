@@ -4,6 +4,8 @@ import { deleteEvent, getApplicationEvents } from '../../api/events';
 import type { ApplicationEvent } from '../../types/event';
 import type { JobApplication } from '../../types/application';
 import EventForm from '../EventForm/EventForm';
+import WorkspaceActionButton from '../WorkspaceActionButton/WorkspaceActionButton';
+import WorkspaceEmptyState from '../WorkspaceEmptyState/WorkspaceEmptyState';
 import styles from './ApplicationSchedule.module.scss';
 
 interface Props { application: JobApplication; onChanged: () => void; onBusyChange: (busy: boolean) => void; }
@@ -57,19 +59,23 @@ export default function ApplicationSchedule({ application, onChanged, onBusyChan
   return <section className={styles.schedule} aria-label="Application schedule">
     <div className={styles.heading}>
       <h3>Schedule</h3>
-      {!creating && !editing && <button className={styles.addButton} type="button" disabled={busy} onClick={() => {
+      {!creating && !editing && <WorkspaceActionButton icon="add" variant="accent" disabled={busy} onClick={() => {
         setEditing(null);
         setCreating(true);
       }}>
-        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14" /></svg>
         Add Event
-      </button>}
+      </WorkspaceActionButton>}
     </div>
     {error && <p role="alert">{error} <button type="button" onClick={() => setRevision(x => x + 1)}>Retry</button></p>}
     {creating || editing ? <div className={styles.eventEditor}><EventForm application={application} event={editing ?? undefined}
       onSaved={changed} onCancel={() => { setCreating(false); setEditing(null); }} onBusyChange={setSaving} /></div> : <>
       {loading && <p role="status">Loading schedule...</p>}
-      {!loading && events.length === 0 && <p className={styles.empty}>No events yet. Schedule an interview, assessment, or follow-up.</p>}
+      {!loading && events.length === 0 && <WorkspaceEmptyState
+        className={styles.empty}
+        icon="schedule"
+        title="No events scheduled"
+        description="Add an interview, assessment, or follow-up to keep the next step visible."
+      />}
       <ul className={styles.list}>{events.map(event => <li
         key={event.id}
         className={`${styles.eventCard} ${styles[event.type]}`}

@@ -4,6 +4,8 @@ import ApplicationForm from '../ApplicationForm/ApplicationForm';
 import ApplicationSchedule from '../ApplicationSchedule/ApplicationSchedule';
 import ApplicationTimeline from '../ApplicationTimeline/ApplicationTimeline';
 import StatusBadge from '../StatusBadge/StatusBadge';
+import WorkspaceActionButton from '../WorkspaceActionButton/WorkspaceActionButton';
+import WorkspaceEmptyState from '../WorkspaceEmptyState/WorkspaceEmptyState';
 import type { JobApplication } from '../../types/application';
 import styles from './ApplicationWorkspace.module.scss';
 
@@ -110,11 +112,11 @@ export default function ApplicationWorkspace({ applications, selectedId, onBack,
         </div>
         {!isEditing && (
           <div className={styles.detailsActions}>
-            <button className={styles.editButton} type="button" onClick={() => {
+            <WorkspaceActionButton icon="edit" onClick={() => {
               setContentOverrides({});
               setEditingSection(null);
               setIsEditing(true);
-            }}>Edit</button>
+            }}>Edit application</WorkspaceActionButton>
             <details className={styles.moreMenu}>
               <summary aria-label="More application actions">•••</summary>
               <div className={styles.menuItems}>
@@ -190,17 +192,20 @@ export default function ApplicationWorkspace({ applications, selectedId, onBack,
                 <section className={styles.contentSection} aria-labelledby="job-description-title">
                   <div className={styles.sectionHeading}>
                     <h3 id="job-description-title">Job Description</h3>
-                    {editingSection !== 'jobDescription' && <button className={styles.sectionEditButton} type="button" onClick={() => beginSectionEdit('jobDescription')}>
-                      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m4 16.5-.7 4.2 4.2-.7L19 8.5 15.5 5 4 16.5Z" /><path d="m13.8 6.7 3.5 3.5" /></svg>
+                    {editingSection !== 'jobDescription' && <WorkspaceActionButton icon="edit" onClick={() => beginSectionEdit('jobDescription')}>
                       Edit
-                    </button>}
+                    </WorkspaceActionButton>}
                   </div>
                   {editingSection === 'jobDescription' ? <form className={styles.inlineEditor} onSubmit={event => void saveSection(event, 'jobDescription')}>
                     <textarea aria-label="Job Description" rows={14} maxLength={20000} value={contentDraft} disabled={savingSection} onChange={event => setContentDraft(event.target.value)} />
                     {sectionError && <p className={styles.sectionError} role="alert">{sectionError}</p>}
                     <div><button type="submit" disabled={savingSection}>{savingSection ? 'Saving...' : 'Save Changes'}</button>
                       <button type="button" disabled={savingSection} onClick={() => setEditingSection(null)}>Cancel</button></div>
-                  </form> : <p>{jobDescription || 'No job description added.'}</p>}
+                  </form> : jobDescription ? <p>{jobDescription}</p> : <WorkspaceEmptyState
+                    icon="document"
+                    title="No job description yet"
+                    description="Add the role description to keep the opportunity details in one place."
+                  />}
                 </section>
               </div>
 
@@ -214,17 +219,20 @@ export default function ApplicationWorkspace({ applications, selectedId, onBack,
                 <section className={styles.contentSection} aria-labelledby="application-notes-title">
                   <div className={styles.sectionHeading}>
                     <h3 id="application-notes-title">Notes</h3>
-                    {editingSection !== 'notes' && <button className={styles.sectionEditButton} type="button" onClick={() => beginSectionEdit('notes')}>
-                      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m4 16.5-.7 4.2 4.2-.7L19 8.5 15.5 5 4 16.5Z" /><path d="m13.8 6.7 3.5 3.5" /></svg>
+                    {editingSection !== 'notes' && <WorkspaceActionButton icon="edit" onClick={() => beginSectionEdit('notes')}>
                       Edit
-                    </button>}
+                    </WorkspaceActionButton>}
                   </div>
                   {editingSection === 'notes' ? <form className={styles.inlineEditor} onSubmit={event => void saveSection(event, 'notes')}>
                     <textarea aria-label="Notes" rows={7} maxLength={2000} value={contentDraft} disabled={savingSection} onChange={event => setContentDraft(event.target.value)} />
                     {sectionError && <p className={styles.sectionError} role="alert">{sectionError}</p>}
                     <div><button type="submit" disabled={savingSection}>{savingSection ? 'Saving...' : 'Save Changes'}</button>
                       <button type="button" disabled={savingSection} onClick={() => setEditingSection(null)}>Cancel</button></div>
-                  </form> : <p>{notes || 'No notes added.'}</p>}
+                  </form> : notes ? <p>{notes}</p> : <WorkspaceEmptyState
+                    icon="notes"
+                    title="No notes yet"
+                    description="Capture research, contacts, or preparation notes for this application."
+                  />}
                 </section>
               </div>
 
