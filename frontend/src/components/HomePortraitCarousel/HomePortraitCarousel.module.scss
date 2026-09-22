@@ -284,21 +284,39 @@
     }
   
     .slide {
-      aspect-ratio: 4 / 3.35;
+      aspect-ratio: 1 / 1;
       border-right: 0;
     }
 
     .pathCard {
-      right: 14px;
-      bottom: 14px;
+      right: auto;
+      bottom: 12px;
       left: 14px;
+      width: min(calc(100% - 64px), 320px);
+      height: 92px;
+      padding: 10px;
+    }
+
+    .contactSaved,
+    .noteMeta {
+      display: none;
+    }
+
+    .assessmentCard {
+      > strong {
+        margin: 5px 0 6px;
+      }
+
+      ul {
+        gap: 3px;
+      }
     }
 
     .mobileControls {
       position: absolute;
       z-index: 4;
-      top: 14px;
-      right: 14px;
+      top: 12px;
+      right: 12px;
       display: flex;
       align-items: center;
       gap: 8px;

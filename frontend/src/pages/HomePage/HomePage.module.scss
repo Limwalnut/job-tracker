@@ -52,6 +52,7 @@ $page-accent: #b9e3e5;
 
 .accountActions {
   display: flex;
+  min-width: max-content;
   justify-content: flex-end;
   align-items: center;
   gap: 32px;
@@ -62,6 +63,7 @@ $page-accent: #b9e3e5;
 .startLink {
   color: inherit;
   text-decoration: none;
+  white-space: nowrap;
 }
 
 .signInLink {
@@ -241,7 +243,22 @@ $page-accent: #b9e3e5;
   }
 }
 
-@media (max-width: 768px) {
+@media (max-width: 1100px) {
+  .header .shell {
+    grid-template-columns: 1fr auto;
+  }
+
+  .navigation,
+  .signInLink {
+    display: none;
+  }
+
+  .accountActions {
+    gap: 0;
+  }
+}
+
+@media (max-width: 900px) {
   .shell,
   .heroContent {
     width: min(calc(100% - 40px), 1440px);
@@ -253,15 +270,6 @@ $page-accent: #b9e3e5;
     .shell {
       grid-template-columns: 1fr auto;
     }
-  }
-
-  .navigation,
-  .signInLink {
-    display: none;
-  }
-
-  .accountActions {
-    gap: 0;
   }
 
   .startLink {
