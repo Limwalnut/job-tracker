@@ -40,8 +40,10 @@
   > input,
   > select,
   > textarea {
+    box-sizing: border-box;
     width: 100%;
     min-width: 0;
+    max-width: 100%;
     border: 1px solid #aab6ca;
     border-radius: 8px;
     color: #1f2937;
@@ -58,6 +60,21 @@
   > select {
     height: 42px;
     padding: 0 12px;
+  }
+
+  // Mobile Safari gives date inputs an intrinsic width based on their
+  // localized value. Explicit logical sizing keeps that native control
+  // inside the same grid column as every other field.
+  > input[type='date'] {
+    display: block;
+    inline-size: 100%;
+    min-inline-size: 0;
+    max-inline-size: 100%;
+
+    &::-webkit-date-and-time-value {
+      min-width: 0;
+      text-align: left;
+    }
   }
 
   > textarea {

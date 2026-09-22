@@ -274,8 +274,10 @@
 @media (max-width: 900px) {
   .details { padding: 20px; }
   .detailsHeading { flex-direction: column; }
-  .detailsActions { width: 100%; }
-  .detailsActions > button { flex: 1; }
+  .detailsActions {
+    width: auto;
+    align-self: flex-start;
+  }
   .detailGrid { grid-template-columns: 1fr; }
   .editPanel { padding: 18px; }
 }

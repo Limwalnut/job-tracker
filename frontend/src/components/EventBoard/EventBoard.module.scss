@@ -90,7 +90,8 @@
 .caption { text-align: left; color: #64748b; padding: 12px 0; font-size: 13px; }
 @media (max-width: 760px) {
   .board { padding: 16px; }
-  .toolbar { width: 100%; align-items: stretch; }
+  .toolbar { width: 100%; align-items: flex-end; }
+  .addButton { align-self: flex-end; }
   .controls { justify-content: flex-end; }
   .filters { align-items: stretch; flex-direction: column; }
   .searchFilter,
