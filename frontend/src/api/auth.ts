@@ -12,8 +12,16 @@ export function register(email: string, password: string) {
   });
 }
 
-export function login(email: string, password: string) {
-  return requestVoid('/auth/login?useCookies=true', {
+export function login(
+  email: string,
+  password: string,
+  rememberMe: boolean,
+) {
+  const cookieMode = rememberMe
+    ? 'useCookies=true'
+    : 'useSessionCookies=true';
+
+  return requestVoid(`/auth/login?${cookieMode}`, {
     method: 'POST',
     body: JSON.stringify({ email, password }),
   });

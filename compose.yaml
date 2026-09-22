@@ -9,6 +9,24 @@ services:
       - "127.0.0.1:5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U jobtracker -d jobtracker"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    environment:
+      ASPNETCORE_ENVIRONMENT: Production
+      ConnectionStrings__DefaultConnection: "Host=db;Port=5432;Database=jobtracker;Username=jobtracker;Password=${POSTGRES_PASSWORD}"
+    ports:
+      - "127.0.0.1:10000:10000"
+    depends_on:
+      db:
+        condition: service_healthy
 
 volumes:
   postgres_data:

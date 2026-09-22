@@ -28,7 +28,7 @@ function RegisterPage() {
     try {
       const normalizedEmail = email.trim();
       await register(normalizedEmail, password);
-      await login(normalizedEmail, password);
+      await login(normalizedEmail, password, false);
       navigate('/applications', { replace: true });
     } catch (problem) {
       setError(

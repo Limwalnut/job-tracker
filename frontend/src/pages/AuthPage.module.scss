@@ -91,6 +91,34 @@ $error: #a22835;
   line-height: 1.4;
 }
 
+.rememberMe {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: fit-content;
+  color: rgb(23 32 93 / 76%);
+  font-size: 0.86rem;
+  font-weight: 500;
+  cursor: pointer;
+
+  input {
+    width: 17px;
+    height: 17px;
+    margin: 0;
+    accent-color: $background;
+    cursor: pointer;
+
+    &:focus-visible {
+      outline: 3px solid rgb(32 43 120 / 20%);
+      outline-offset: 2px;
+    }
+  }
+
+  &:hover {
+    color: $text;
+  }
+}
+
 .error {
   margin: 0;
   padding: 11px 13px;

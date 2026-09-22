@@ -1,18 +1,22 @@
 using JobTracker.Api.Models;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
+using Microsoft.AspNetCore.DataProtection.EntityFrameworkCore;
 
 namespace JobTracker.Api.Data;
 
-public class AppDbContext : IdentityDbContext<ApplicationUser>
+public class AppDbContext :
+    IdentityDbContext<ApplicationUser>,
+    IDataProtectionKeyContext
 {
     public AppDbContext(DbContextOptions<AppDbContext> options)
         : base(options)
     {
     }
 
-    public DbSet<JobApplication> Applications { get; set; }
+    public DbSet<DataProtectionKey> DataProtectionKeys { get; set; } = null!;
 
+    public DbSet<JobApplication> Applications { get; set; }
 
     public DbSet<ApplicationEvent> ApplicationEvents { get; set; }
 

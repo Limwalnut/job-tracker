@@ -8,6 +8,7 @@ function LoginPage() {
   const navigate = useNavigate();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [rememberMe, setRememberMe] = useState(false);
   const [error, setError] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const { login } = useAuth();
@@ -18,7 +19,7 @@ function LoginPage() {
     setSubmitting(true);
 
     try {
-      await login(email.trim(), password);
+      await login(email.trim(), password, rememberMe);
       navigate('/applications', { replace: true });
     } catch (problem) {
       setError(
@@ -68,6 +69,15 @@ function LoginPage() {
               onChange={(event) => setPassword(event.target.value)}
               required
             />
+          </label>
+
+          <label className={styles.rememberMe}>
+            <input
+              type="checkbox"
+              checked={rememberMe}
+              onChange={(event) => setRememberMe(event.target.checked)}
+            />
+            <span>Remember me for 7 days</span>
           </label>
 
           {error && (

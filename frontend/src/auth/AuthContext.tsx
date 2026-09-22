@@ -28,8 +28,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       .finally(() => setLoading(false));
   }, []);
 
-  async function login(email: string, password: string) {
-    await loginRequest(email, password);
+  async function login(
+    email: string,
+    password: string,
+    rememberMe: boolean,
+  ) {
+    await loginRequest(email, password, rememberMe);
     const currentUser = await getCurrentUser();
     setUser(currentUser);
   }
