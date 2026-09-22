@@ -312,6 +312,30 @@ $page-accent: #b9e3e5;
   .actionArrow { min-width: 28px; padding-left: 15px; }
 }
 
+@media (min-width: 601px) and (max-width: 900px) {
+  .heroTitle {
+    font-size: clamp(3.2rem, 7.2vw, 4rem);
+    line-height: 1.04;
+  }
+
+  .heroDescription {
+    font-size: 1rem;
+  }
+
+  .heroAction {
+    min-width: 196px;
+    min-height: 42px;
+    gap: 20px;
+    padding: 0 14px 0 16px;
+    font-size: 0.92rem;
+  }
+
+  .actionArrow {
+    min-width: 24px;
+    padding-left: 12px;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .brand,
   .navigation,
