@@ -1,20 +1,20 @@
 import {
-    useCallback,
-    useEffect,
-    useRef,
-    useState,
-  } from 'react';
-  import type { TransitionEvent, UIEvent } from 'react';
-  import architectPortrait from '../../assets/home/portraits/architect.webp';
-  import civilEngineerPortrait from '../../assets/home/portraits/civil-engineer.webp';
-  import healthcarePortrait from '../../assets/home/portraits/healthcare-professional.webp';
-  import lawyerPortrait from '../../assets/home/portraits/lawyer.webp';
-  import softwareEngineerPortrait from '../../assets/home/portraits/software-engineer.webp';
-  import teacherPortrait from '../../assets/home/portraits/teacher.webp';
-  import HomeStageProgress from '../HomeStageProgress/HomeStageProgress';
-  import styles from './HomePortraitCarousel.module.scss';
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+} from 'react';
+import type { KeyboardEvent, TouchEvent, TransitionEvent } from 'react';
+import architectPortrait from '../../assets/home/portraits/architect.webp';
+import civilEngineerPortrait from '../../assets/home/portraits/civil-engineer.webp';
+import healthcarePortrait from '../../assets/home/portraits/healthcare-professional.webp';
+import lawyerPortrait from '../../assets/home/portraits/lawyer.webp';
+import softwareEngineerPortrait from '../../assets/home/portraits/software-engineer.webp';
+import teacherPortrait from '../../assets/home/portraits/teacher.webp';
+import HomeStageProgress from '../HomeStageProgress/HomeStageProgress';
+import styles from './HomePortraitCarousel.module.scss';
   
-  const portraits = [
+const portraits = [
     {
       id: 'software-engineer',
       role: 'Software engineer',
@@ -51,14 +51,28 @@ import {
       image: architectPortrait,
       cardLabel: 'Offer received',
     },
-  ];
+];
   
-  const desktopVisibleSlides = 5;
-  const slideWidthPercentage = 100 / desktopVisibleSlides;
-  const autoplayDelay = 2500;
-  const stageCount = 5;
+const mobilePortraitIds = [
+  'healthcare-professional',
+  'teacher',
+  'civil-engineer',
+  'software-engineer',
+  'architect',
+];
 
-  function portraitCard(id: string) {
+const mobilePortraits = mobilePortraitIds.map((id) => (
+  portraits.find((portrait) => portrait.id === id)!
+));
+
+const desktopVisibleSlides = 5;
+const slideWidthPercentage = 100 / desktopVisibleSlides;
+const desktopAutoplayDelay = 2500;
+const mobileAutoplayDelay = 4200;
+const stageCount = 5;
+const swipeThreshold = 44;
+
+function portraitCard(id: string) {
     switch (id) {
       case 'software-engineer':
         return <div className={`${styles.pathCard} ${styles.interviewCard}`}>
@@ -108,35 +122,48 @@ import {
           <span>Review the details by Friday</span>
         </div>;
     }
-  }
+}
   
-  function HomePortraitCarousel() {
+function HomePortraitCarousel() {
     const [trackIndex, setTrackIndex] = useState(portraits.length);
     const [transitionEnabled, setTransitionEnabled] = useState(true);
     const [isPaused, setIsPaused] = useState(false);
     const [isMobile, setIsMobile] = useState(false);
     const [activeStageIndex, setActiveStageIndex] = useState(0);
-    const [mobileSlideIndex, setMobileSlideIndex] = useState(0);
-  
     const animationLocked = useRef(false);
+    const touchStartX = useRef<number | null>(null);
+    const [autoplayResetKey, setAutoplayResetKey] = useState(0);
   
     useEffect(() => {
       const mediaQuery = window.matchMedia('(max-width: 900px)');
   
+      let animationFrameId = 0;
+
       const updateLayout = () => {
-        setIsMobile(mediaQuery.matches);
+        const mobile = mediaQuery.matches;
+        setIsMobile(mobile);
+        setTransitionEnabled(false);
+        setTrackIndex(mobile ? mobilePortraits.length : portraits.length);
+        setActiveStageIndex(0);
+        animationLocked.current = false;
+        animationFrameId = window.requestAnimationFrame(() => {
+          setTransitionEnabled(true);
+        });
       };
   
       updateLayout();
       mediaQuery.addEventListener('change', updateLayout);
   
       return () => {
+        window.cancelAnimationFrame(animationFrameId);
         mediaQuery.removeEventListener('change', updateLayout);
       };
     }, []);
+
+    const visiblePortraits = isMobile ? mobilePortraits : portraits;
   
     const moveNext = useCallback(() => {
-      if (animationLocked.current || isMobile) {
+      if (animationLocked.current) {
         return;
       }
   
@@ -144,19 +171,35 @@ import {
       setTransitionEnabled(true);
       setTrackIndex((currentIndex) => currentIndex + 1);
       setActiveStageIndex((currentIndex) => (currentIndex + 1) % stageCount);
-    }, [isMobile]);
-  
-    useEffect(() => {
-      if (isPaused || isMobile) {
+    }, []);
+
+    const movePrevious = useCallback(() => {
+      if (animationLocked.current) {
         return;
       }
+
+      animationLocked.current = true;
+      setTransitionEnabled(true);
+      setTrackIndex((currentIndex) => currentIndex - 1);
+      setActiveStageIndex((currentIndex) => (
+        (currentIndex - 1 + stageCount) % stageCount
+      ));
+    }, []);
   
-      const intervalId = window.setInterval(moveNext, autoplayDelay);
+    useEffect(() => {
+      if (isPaused) {
+        return;
+      }
+
+      const intervalId = window.setInterval(
+        moveNext,
+        isMobile ? mobileAutoplayDelay : desktopAutoplayDelay,
+      );
   
       return () => {
         window.clearInterval(intervalId);
       };
-    }, [isMobile, isPaused, moveNext]);
+    }, [autoplayResetKey, isMobile, isPaused, moveNext]);
   
     const handleTransitionEnd = (
       event: TransitionEvent<HTMLDivElement>,
@@ -167,36 +210,62 @@ import {
   
       animationLocked.current = false;
   
-      if (trackIndex >= portraits.length * 2) {
+      if (trackIndex >= visiblePortraits.length * 2) {
         setTransitionEnabled(false);
-        setTrackIndex(portraits.length);
+        setTrackIndex(visiblePortraits.length);
         return;
       }
   
-      if (trackIndex < portraits.length) {
+      if (trackIndex < visiblePortraits.length) {
         setTransitionEnabled(false);
-        setTrackIndex(portraits.length * 2 - 1);
+        setTrackIndex(visiblePortraits.length * 2 - 1);
       }
     };
   
-    const groups = isMobile ? [1] : [0, 1, 2];
+    const groups = [0, 1, 2];
 
-    const handleMobileScroll = (event: UIEvent<HTMLDivElement>) => {
-      if (!isMobile) {
-        return;
+    const moveManually = (direction: 'next' | 'previous') => {
+      if (direction === 'next') {
+        moveNext();
+      } else {
+        movePrevious();
       }
+      setAutoplayResetKey((currentKey) => currentKey + 1);
+    };
 
-      const slideWidth = event.currentTarget.clientWidth * 0.72;
-      const visibleSlideIndex = Math.round(
-        event.currentTarget.scrollLeft / slideWidth,
-      );
+    const handleTouchStart = (event: TouchEvent<HTMLDivElement>) => {
+      touchStartX.current = event.touches[0]?.clientX ?? null;
+    };
 
-      setActiveStageIndex(visibleSlideIndex % stageCount);
-      setMobileSlideIndex(visibleSlideIndex % portraits.length);
+    const handleTouchEnd = (event: TouchEvent<HTMLDivElement>) => {
+      if (touchStartX.current === null) return;
+
+      const endX = event.changedTouches[0]?.clientX ?? touchStartX.current;
+      const distance = endX - touchStartX.current;
+      touchStartX.current = null;
+
+      if (Math.abs(distance) < swipeThreshold) return;
+      moveManually(distance < 0 ? 'next' : 'previous');
+    };
+
+    const handleTouchCancel = () => {
+      touchStartX.current = null;
+    };
+
+    const handleKeyDown = (event: KeyboardEvent<HTMLElement>) => {
+      if (event.key === 'ArrowRight') {
+        event.preventDefault();
+        moveManually('next');
+      } else if (event.key === 'ArrowLeft') {
+        event.preventDefault();
+        moveManually('previous');
+      }
     };
   
     const trackStyle = isMobile
-      ? undefined
+      ? {
+          transform: `translate3d(-${trackIndex * 100}%, 0, 0)`,
+        }
       : {
           transform: `translate3d(-${
             trackIndex * slideWidthPercentage
@@ -208,10 +277,20 @@ import {
         className={styles.carousel}
         id="product"
         aria-label="Profession portrait carousel"
-        onMouseEnter={() => setIsPaused(true)}
-        onMouseLeave={() => setIsPaused(false)}
+        onMouseEnter={() => {
+          if (!isMobile) setIsPaused(true);
+        }}
+        onMouseLeave={() => {
+          if (!isMobile) setIsPaused(false);
+        }}
+        onKeyDown={handleKeyDown}
       >
-        <div className={styles.viewport} onScroll={handleMobileScroll}>
+        <div
+          className={styles.viewport}
+          onTouchStart={handleTouchStart}
+          onTouchEnd={handleTouchEnd}
+          onTouchCancel={handleTouchCancel}
+        >
           <div
             className={`${styles.track} ${
               transitionEnabled ? '' : styles.trackWithoutTransition
@@ -220,11 +299,11 @@ import {
             onTransitionEnd={handleTransitionEnd}
           >
             {groups.map((groupIndex) =>
-              portraits.map((portrait, portraitIndex) => {
+              visiblePortraits.map((portrait, portraitIndex) => {
                 const isClone = groupIndex !== 1;
-                const absoluteIndex = groupIndex * portraits.length + portraitIndex;
+                const absoluteIndex = groupIndex * visiblePortraits.length + portraitIndex;
                 const isStageActive = isMobile
-                  ? groupIndex === 1 && portraitIndex === mobileSlideIndex
+                  ? absoluteIndex === trackIndex
                   : absoluteIndex === trackIndex + activeStageIndex;
   
                 return (
@@ -252,10 +331,34 @@ import {
               }),
             )}
           </div>
+
+          {isMobile && (
+            <div className={styles.mobileControls}>
+              <button
+                type="button"
+                aria-label="Previous story"
+                onClick={() => moveManually('previous')}
+              >
+                ←
+              </button>
+              <span aria-live="polite">
+                {String(activeStageIndex + 1).padStart(2, '0')}
+                <i aria-hidden="true" />
+                {String(stageCount).padStart(2, '0')}
+              </span>
+              <button
+                type="button"
+                aria-label="Next story"
+                onClick={() => moveManually('next')}
+              >
+                →
+              </button>
+            </div>
+          )}
         </div>
         <HomeStageProgress activeStageIndex={activeStageIndex} />
       </section>
     );
-  }
+}
   
-  export default HomePortraitCarousel;
+export default HomePortraitCarousel;

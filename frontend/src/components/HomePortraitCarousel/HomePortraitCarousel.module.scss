@@ -269,34 +269,86 @@
   
   @media (max-width: 900px) {
     .carousel {
-      width: 100%;
-      padding-left: 20px;
+      width: calc(100% - 40px);
     }
   
     .viewport {
-      overflow-x: auto;
-      scroll-snap-type: x mandatory;
-      scrollbar-width: none;
-  
-      &::-webkit-scrollbar {
-        display: none;
-      }
+      position: relative;
+      overflow: hidden;
+      touch-action: pan-y;
     }
   
     .track {
-      grid-auto-columns: 72%;
-      transform: none;
-      transition: none;
+      grid-auto-columns: 100%;
     }
   
     .slide {
-      scroll-snap-align: start;
+      aspect-ratio: 4 / 4.65;
+      border-right: 0;
     }
 
     .pathCard {
-      right: 10px;
-      bottom: 10px;
-      left: 10px;
+      right: 14px;
+      bottom: 14px;
+      left: 14px;
+    }
+
+    .mobileControls {
+      position: absolute;
+      z-index: 4;
+      top: 14px;
+      right: 14px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 5px;
+      color: #202b78;
+      background: rgba(241, 243, 234, 0.94);
+      border: 1px solid rgba(255, 255, 255, 0.58);
+      border-radius: 999px;
+      box-shadow: 0 10px 24px rgba(9, 16, 67, 0.18);
+      backdrop-filter: blur(10px);
+
+      button {
+        display: grid;
+        width: 32px;
+        height: 32px;
+        padding: 0;
+        place-items: center;
+        border: 0;
+        border-radius: 50%;
+        color: inherit;
+        background: transparent;
+        font: inherit;
+        font-size: 1rem;
+        cursor: pointer;
+
+        &:active {
+          background: rgba(32, 43, 120, 0.1);
+        }
+
+        &:focus-visible {
+          outline: 2px solid #202b78;
+          outline-offset: 1px;
+        }
+      }
+
+      span {
+        display: flex;
+        align-items: center;
+        gap: 5px;
+        min-width: 47px;
+        justify-content: center;
+        font-size: 0.58rem;
+        font-weight: 700;
+        letter-spacing: 0.08em;
+      }
+
+      i {
+        width: 12px;
+        height: 1px;
+        background: rgba(32, 43, 120, 0.35);
+      }
     }
   }
   
