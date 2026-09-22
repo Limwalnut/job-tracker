@@ -248,7 +248,7 @@ $page-accent: #b9e3e5;
   }
 
   .header {
-    height: 68px;
+    height: 62px;
 
     .shell {
       grid-template-columns: 1fr auto;
@@ -273,22 +273,31 @@ $page-accent: #b9e3e5;
   .compactArrow { min-width: 21px; padding-left: 10px; }
 
   .hero {
-    padding: 44px 0 28px;
+    padding: 18px 0 16px;
+  }
+
+  .eyebrow {
+    margin-bottom: 11px;
+    padding: 6px 14px;
+    font-size: 0.64rem;
   }
 
   .heroTitle {
     max-width: 100%;
-    font-size: clamp(2.85rem, 12.8vw, 5rem);
-    line-height: 1.08;
+    font-size: clamp(2.35rem, 10.3vw, 3rem);
+    line-height: 1.02;
   }
 
   .heroDescription {
-    margin-top: 24px;
+    max-width: 34rem;
+    margin: 14px 0;
+    font-size: 0.9rem;
+    line-height: 1.35;
   }
 
   .heroAction {
     min-width: min(100%, 228px);
-    min-height: 52px;
+    min-height: 46px;
     padding: 0 17px 0 19px;
   }
 

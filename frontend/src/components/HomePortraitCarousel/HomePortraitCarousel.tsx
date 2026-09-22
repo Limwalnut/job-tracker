@@ -130,6 +130,7 @@ function HomePortraitCarousel() {
     const [isPaused, setIsPaused] = useState(false);
     const [isMobile, setIsMobile] = useState(false);
     const [activeStageIndex, setActiveStageIndex] = useState(0);
+    const [interactiveSlideIndex, setInteractiveSlideIndex] = useState<number | null>(null);
     const animationLocked = useRef(false);
     const touchStartX = useRef<number | null>(null);
     const [autoplayResetKey, setAutoplayResetKey] = useState(0);
@@ -145,6 +146,7 @@ function HomePortraitCarousel() {
         setTransitionEnabled(false);
         setTrackIndex(mobile ? mobilePortraits.length : portraits.length);
         setActiveStageIndex(0);
+        setInteractiveSlideIndex(null);
         animationLocked.current = false;
         animationFrameId = window.requestAnimationFrame(() => {
           setTransitionEnabled(true);
@@ -281,7 +283,10 @@ function HomePortraitCarousel() {
           if (!isMobile) setIsPaused(true);
         }}
         onMouseLeave={() => {
-          if (!isMobile) setIsPaused(false);
+          if (!isMobile) {
+            setInteractiveSlideIndex(null);
+            setIsPaused(false);
+          }
         }}
         onKeyDown={handleKeyDown}
       >
@@ -304,7 +309,9 @@ function HomePortraitCarousel() {
                 const absoluteIndex = groupIndex * visiblePortraits.length + portraitIndex;
                 const isStageActive = isMobile
                   ? absoluteIndex === trackIndex
-                  : absoluteIndex === trackIndex + activeStageIndex;
+                  : absoluteIndex === (
+                      interactiveSlideIndex ?? trackIndex + activeStageIndex
+                    );
   
                 return (
                   <article
@@ -313,8 +320,17 @@ function HomePortraitCarousel() {
                     aria-hidden={isClone}
                     aria-label={isClone ? undefined : `${portrait.role}: ${portrait.cardLabel}`}
                     tabIndex={isClone ? -1 : 0}
-                    onFocus={() => setIsPaused(true)}
-                    onBlur={() => setIsPaused(false)}
+                    onMouseEnter={() => {
+                      if (!isMobile) setInteractiveSlideIndex(absoluteIndex);
+                    }}
+                    onFocus={() => {
+                      setIsPaused(true);
+                      if (!isMobile) setInteractiveSlideIndex(absoluteIndex);
+                    }}
+                    onBlur={() => {
+                      setIsPaused(false);
+                      setInteractiveSlideIndex(null);
+                    }}
                   >
                     <img
                       src={portrait.image}

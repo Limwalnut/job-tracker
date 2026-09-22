@@ -22,6 +22,11 @@
   
   .trackWithoutTransition {
     transition: none;
+
+    .pathCard,
+    .slide::after {
+      transition: none;
+    }
   }
   
   .slide {
@@ -49,14 +54,10 @@
       pointer-events: none;
     }
 
-    &:hover::after,
-    &:focus-visible::after,
     &.stageActive::after {
       opacity: 1;
     }
 
-    &:hover .pathCard,
-    &:focus-visible .pathCard,
     &.stageActive .pathCard {
       opacity: 1;
       transform: translateY(0);
@@ -283,7 +284,7 @@
     }
   
     .slide {
-      aspect-ratio: 4 / 4.65;
+      aspect-ratio: 4 / 3.35;
       border-right: 0;
     }
 
