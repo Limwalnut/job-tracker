@@ -55,7 +55,7 @@ import {
   
   const desktopVisibleSlides = 5;
   const slideWidthPercentage = 100 / desktopVisibleSlides;
-  const autoplayDelay = 4500;
+  const autoplayDelay = 2500;
   const stageCount = 5;
 
   function portraitCard(id: string) {
