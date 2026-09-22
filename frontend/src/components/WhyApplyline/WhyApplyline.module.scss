@@ -208,11 +208,14 @@ $mint: #b9e3e5;
   em { color: rgba(241, 243, 234, 0.48); font-size: 0.62rem; font-style: normal; }
 }
 
-.pathVisual { padding: 34px 28px 22px; }
+.pathVisual {
+  --path-node-center: 51px;
+  padding: 34px 28px 22px;
+}
 
 .pathLine {
   position: absolute;
-  top: 55px;
+  top: var(--path-node-center);
   right: 12%;
   left: 12%;
   height: 2px;

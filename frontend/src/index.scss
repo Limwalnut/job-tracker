@@ -18,6 +18,13 @@ html {
   box-sizing: border-box;
 }
 
+a,
+button,
+[role='button'],
+[tabindex] {
+  -webkit-tap-highlight-color: transparent;
+}
+
 body {
   margin: 0;
   min-width: 320px;
