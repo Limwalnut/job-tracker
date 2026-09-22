@@ -1,0 +1,8 @@
+User-agent: *
+Allow: /
+Disallow: /api/
+Disallow: /applications
+Disallow: /login
+Disallow: /register
+
+Sitemap: https://applyline.app/sitemap.xml

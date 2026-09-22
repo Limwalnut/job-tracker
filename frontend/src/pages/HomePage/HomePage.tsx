@@ -5,6 +5,8 @@ import BrandLogo from '../../components/BrandLogo/BrandLogo';
 import HowItWorks from '../../components/HowItWorks/HowItWorks';
 import WhyApplyline from '../../components/WhyApplyline/WhyApplyline';
 import { useAuth } from '../../auth/useAuth';
+import SiteFooter from '../../components/SiteFooter/SiteFooter';
+import PageMetadata from '../../components/PageMetadata/PageMetadata';
 
 function HomePage() {
   const { user } = useAuth();
@@ -12,6 +14,11 @@ function HomePage() {
 
   return (
     <div className={styles.page}>
+      <PageMetadata
+        canonicalPath="/"
+        description="Applyline keeps job applications, interviews and every next step moving in one clear direction."
+        title="Applyline — Job Application Tracker"
+      />
       <header className={styles.header}>
         <div className={styles.shell}>
           <Link className={styles.brand} to="/">
@@ -71,6 +78,7 @@ function HomePage() {
           ctaLabel={user ? 'Open your tracker' : 'Build your path'}
         />
       </main>
+      <SiteFooter />
     </div>
   );
 }

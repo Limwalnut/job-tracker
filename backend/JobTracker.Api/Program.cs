@@ -71,6 +71,28 @@ builder.Services.AddAuthorization();
 
 var app = builder.Build();
 
+app.Use(async (context, next) =>
+{
+    var path = context.Request.Path;
+    var shouldPreventIndexing =
+        path.StartsWithSegments("/api") ||
+        path.StartsWithSegments("/health") ||
+        path.StartsWithSegments("/login") ||
+        path.StartsWithSegments("/register") ||
+        path.StartsWithSegments("/applications");
+
+    if (shouldPreventIndexing)
+    {
+        context.Response.OnStarting(() =>
+        {
+            context.Response.Headers["X-Robots-Tag"] = "noindex, nofollow";
+            return Task.CompletedTask;
+        });
+    }
+
+    await next();
+});
+
 if (!app.Environment.IsDevelopment())
 {
     await using var scope = app.Services.CreateAsyncScope();
