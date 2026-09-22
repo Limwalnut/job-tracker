@@ -6,6 +6,8 @@ using Microsoft.AspNetCore.Identity;
 using System.Security.Claims;
 using Microsoft.AspNetCore.DataProtection;
 using Microsoft.AspNetCore.DataProtection.EntityFrameworkCore;
+using Microsoft.AspNetCore.HttpOverrides;
+using JobTracker.Api.Authentication;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -53,6 +55,33 @@ builder.Services
     .AddIdentityApiEndpoints<ApplicationUser>()
     .AddEntityFrameworkStores<AppDbContext>();
 
+var googleClientId = builder.Configuration["Authentication:Google:ClientId"];
+var googleClientSecret = builder.Configuration["Authentication:Google:ClientSecret"];
+var googleAuthenticationEnabled =
+    !string.IsNullOrWhiteSpace(googleClientId) &&
+    !string.IsNullOrWhiteSpace(googleClientSecret);
+
+if (googleAuthenticationEnabled)
+{
+    builder.Services.AddAuthentication()
+        .AddGoogle(options =>
+        {
+            options.ClientId = googleClientId!;
+            options.ClientSecret = googleClientSecret!;
+            options.SignInScheme = IdentityConstants.ExternalScheme;
+            options.Events.OnRemoteFailure = context =>
+            {
+                context.HandleResponse();
+                context.Response.Redirect(
+                    GoogleAuthenticationEndpoints.CreateFrontendUrl(
+                        context.HttpContext,
+                        builder.Configuration["Authentication:FrontendBaseUrl"],
+                        "/login?googleError=authentication_failed"));
+                return Task.CompletedTask;
+            };
+        });
+}
+
 builder.Services.ConfigureApplicationCookie(options =>
 {
     options.Cookie.Name = "Applyline.Auth";
@@ -70,6 +99,14 @@ builder.Services.ConfigureApplicationCookie(options =>
 builder.Services.AddAuthorization();
 
 var app = builder.Build();
+
+var forwardedHeadersOptions = new ForwardedHeadersOptions
+{
+    ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto
+};
+forwardedHeadersOptions.KnownIPNetworks.Clear();
+forwardedHeadersOptions.KnownProxies.Clear();
+app.UseForwardedHeaders(forwardedHeadersOptions);
 
 app.Use(async (context, next) =>
 {
@@ -123,6 +160,10 @@ app.UseAuthorization();
 var auth = app.MapGroup("/api/auth");
 
 auth.MapIdentityApi<ApplicationUser>();
+
+auth.MapGoogleAuthentication(
+    googleAuthenticationEnabled,
+    builder.Configuration["Authentication:FrontendBaseUrl"]);
 
 auth.MapGet("/me", (ClaimsPrincipal principal) =>
 {

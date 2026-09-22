@@ -22,6 +22,8 @@ services:
     environment:
       ASPNETCORE_ENVIRONMENT: Production
       ConnectionStrings__DefaultConnection: "Host=db;Port=5432;Database=jobtracker;Username=jobtracker;Password=${POSTGRES_PASSWORD}"
+      Authentication__Google__ClientId: ${GOOGLE_CLIENT_ID:-}
+      Authentication__Google__ClientSecret: ${GOOGLE_CLIENT_SECRET:-}
     ports:
       - "127.0.0.1:10000:10000"
     depends_on:

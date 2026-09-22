@@ -4,13 +4,35 @@ import styles from '../AuthPage.module.scss';
 import { ApiError } from '../../api/client';
 import { useAuth } from '../../auth/useAuth';
 import BrandLogo from '../../components/BrandLogo/BrandLogo';
+import GoogleSignInButton from '../../components/GoogleSignInButton/GoogleSignInButton';
+
+function getGoogleError(code: string | null) {
+  switch (code) {
+    case 'not_configured':
+      return 'Google sign-in is not available yet.';
+    case 'locked_out':
+      return 'This account is temporarily locked. Please try again later.';
+    case 'email_unavailable':
+      return 'Google did not provide an email address for this account.';
+    case 'account_creation_failed':
+    case 'account_link_failed':
+      return 'We could not connect your Google account. Please try again.';
+    case 'authentication_failed':
+      return 'Google sign-in was cancelled or could not be completed.';
+    default:
+      return '';
+  }
+}
 
 function LoginPage() {
   const navigate = useNavigate();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [rememberMe, setRememberMe] = useState(false);
-  const [error, setError] = useState('');
+  const [error, setError] = useState(() => {
+    const parameters = new URLSearchParams(window.location.search);
+    return getGoogleError(parameters.get('googleError'));
+  });
   const [submitting, setSubmitting] = useState(false);
   const { login } = useAuth();
 
@@ -45,6 +67,12 @@ function LoginPage() {
         <p className={styles.introduction}>
           Sign in to manage your applications and upcoming interviews.
         </p>
+
+        <GoogleSignInButton label="Continue with Google" />
+
+        <div className={styles.divider} aria-hidden="true">
+          <span>or continue with email</span>
+        </div>
 
         <form className={styles.form} onSubmit={handleSubmit}>
           <label className={styles.field}>

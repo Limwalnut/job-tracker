@@ -4,13 +4,26 @@ import { register } from '../../api/auth';
 import { useAuth } from '../../auth/useAuth';
 import styles from '../AuthPage.module.scss';
 import BrandLogo from '../../components/BrandLogo/BrandLogo';
+import GoogleSignInButton from '../../components/GoogleSignInButton/GoogleSignInButton';
+
+function getGoogleError(code: string | null) {
+  if (!code) return '';
+  if (code === 'not_configured') return 'Google sign-up is not available yet.';
+  if (code === 'email_unavailable') {
+    return 'Google did not provide an email address for this account.';
+  }
+  return 'We could not create your account with Google. Please try again.';
+}
 
 function RegisterPage() {
   const navigate = useNavigate();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
-  const [error, setError] = useState('');
+  const [error, setError] = useState(() => {
+    const parameters = new URLSearchParams(window.location.search);
+    return getGoogleError(parameters.get('googleError'));
+  });
   const [submitting, setSubmitting] = useState(false);
   const { login } = useAuth();
 
@@ -53,6 +66,12 @@ function RegisterPage() {
         <p className={styles.introduction}>
           Keep every application, interview and next step in one place.
         </p>
+
+        <GoogleSignInButton label="Sign up with Google" />
+
+        <div className={styles.divider} aria-hidden="true">
+          <span>or sign up with email</span>
+        </div>
 
         <form className={styles.form} onSubmit={handleSubmit}>
           <label className={styles.field}>
