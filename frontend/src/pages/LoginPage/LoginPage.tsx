@@ -1,6 +1,7 @@
 import { useState, type FormEvent } from 'react';
 import { Link, useNavigate } from 'react-router';
 import styles from '../AuthPage.module.scss';
+import { ApiError } from '../../api/client';
 import { useAuth } from '../../auth/useAuth';
 import BrandLogo from '../../components/BrandLogo/BrandLogo';
 
@@ -22,11 +23,11 @@ function LoginPage() {
       await login(email.trim(), password, rememberMe);
       navigate('/applications', { replace: true });
     } catch (problem) {
-      setError(
-        problem instanceof Error
-          ? problem.message
-          : 'Unable to sign in. Please try again.',
-      );
+      if (problem instanceof ApiError && problem.status === 401) {
+        setError('Email or password is incorrect.');
+      } else {
+        setError('Unable to sign in right now. Please try again.');
+      }
     } finally {
       setSubmitting(false);
     }
