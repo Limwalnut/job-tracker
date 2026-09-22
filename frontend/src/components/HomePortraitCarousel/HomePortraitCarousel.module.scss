@@ -270,7 +270,7 @@
   
   @media (max-width: 900px) {
     .carousel {
-      width: min(calc(100% - 40px), 520px);
+      width: min(calc(100% - 40px), 860px);
     }
   
     .viewport {
@@ -280,11 +280,33 @@
     }
   
     .track {
-      grid-auto-columns: 100%;
+      grid-auto-columns: calc(100% / 3);
     }
   
     .slide {
-      aspect-ratio: 4 / 3.7;
+      aspect-ratio: 4 / 5;
+    }
+
+    .pathCard {
+      right: 12px;
+      bottom: 8px;
+      left: 12px;
+      height: 94px;
+      padding: 10px;
+    }
+  }
+
+  @media (max-width: 600px) {
+    .carousel {
+      width: calc(100% - 40px);
+    }
+
+    .track {
+      grid-auto-columns: 100%;
+    }
+
+    .slide {
+      aspect-ratio: 1 / 1;
       border-right: 0;
     }
 
@@ -368,16 +390,6 @@
         height: 1px;
         background: rgba(32, 43, 120, 0.35);
       }
-    }
-  }
-
-  @media (max-width: 600px) {
-    .carousel {
-      width: calc(100% - 40px);
-    }
-
-    .slide {
-      aspect-ratio: 1 / 1;
     }
   }
   

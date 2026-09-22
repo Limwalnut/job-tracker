@@ -66,7 +66,7 @@ const mobilePortraits = mobilePortraitIds.map((id) => (
 ));
 
 const desktopVisibleSlides = 5;
-const slideWidthPercentage = 100 / desktopVisibleSlides;
+const tabletVisibleSlides = 3;
 const desktopAutoplayDelay = 2500;
 const mobileAutoplayDelay = 4200;
 const stageCount = 5;
@@ -129,6 +129,7 @@ function HomePortraitCarousel() {
     const [transitionEnabled, setTransitionEnabled] = useState(true);
     const [isPaused, setIsPaused] = useState(false);
     const [isMobile, setIsMobile] = useState(false);
+    const [isTablet, setIsTablet] = useState(false);
     const [activeStageIndex, setActiveStageIndex] = useState(0);
     const [interactiveSlideIndex, setInteractiveSlideIndex] = useState<number | null>(null);
     const animationLocked = useRef(false);
@@ -136,13 +137,18 @@ function HomePortraitCarousel() {
     const [autoplayResetKey, setAutoplayResetKey] = useState(0);
   
     useEffect(() => {
-      const mediaQuery = window.matchMedia('(max-width: 900px)');
+      const mobileMediaQuery = window.matchMedia('(max-width: 600px)');
+      const tabletMediaQuery = window.matchMedia(
+        '(min-width: 601px) and (max-width: 900px)',
+      );
   
       let animationFrameId = 0;
 
       const updateLayout = () => {
-        const mobile = mediaQuery.matches;
+        const mobile = mobileMediaQuery.matches;
+        const tablet = tabletMediaQuery.matches;
         setIsMobile(mobile);
+        setIsTablet(tablet);
         setTransitionEnabled(false);
         setTrackIndex(mobile ? mobilePortraits.length : portraits.length);
         setActiveStageIndex(0);
@@ -154,15 +160,21 @@ function HomePortraitCarousel() {
       };
   
       updateLayout();
-      mediaQuery.addEventListener('change', updateLayout);
+      mobileMediaQuery.addEventListener('change', updateLayout);
+      tabletMediaQuery.addEventListener('change', updateLayout);
   
       return () => {
         window.cancelAnimationFrame(animationFrameId);
-        mediaQuery.removeEventListener('change', updateLayout);
+        mobileMediaQuery.removeEventListener('change', updateLayout);
+        tabletMediaQuery.removeEventListener('change', updateLayout);
       };
     }, []);
 
     const visiblePortraits = isMobile ? mobilePortraits : portraits;
+    const visibleSlideCount = isTablet
+      ? tabletVisibleSlides
+      : desktopVisibleSlides;
+    const slideWidthPercentage = 100 / visibleSlideCount;
   
     const moveNext = useCallback(() => {
       if (animationLocked.current) {
@@ -310,7 +322,8 @@ function HomePortraitCarousel() {
                 const isStageActive = isMobile
                   ? absoluteIndex === trackIndex
                   : absoluteIndex === (
-                      interactiveSlideIndex ?? trackIndex + activeStageIndex
+                      interactiveSlideIndex
+                        ?? trackIndex + (isTablet ? 1 : activeStageIndex)
                     );
   
                 return (
