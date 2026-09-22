@@ -168,24 +168,6 @@ $text: #172033;
   text-transform: uppercase;
 }
 
-.primaryAction {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  min-height: 42px;
-  padding: 10px 16px;
-  border: 1px solid $accent;
-  border-radius: 8px;
-  color: #fff;
-  background: $accent;
-  font: inherit;
-  font-weight: 650;
-  cursor: pointer;
-
-  &:hover { background: #3730a3; }
-  &:focus-visible { outline: 3px solid rgb(67 56 202 / 24%); outline-offset: 2px; }
-}
-
 .dashboard {
   display: grid;
   gap: 24px;

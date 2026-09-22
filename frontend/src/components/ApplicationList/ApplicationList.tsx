@@ -1,4 +1,5 @@
 import ApplicationRow from '../ApplicationRow/ApplicationRow';
+import PrimaryActionButton from '../PrimaryActionButton/PrimaryActionButton';
 import type { ApplicationStatus, JobApplication } from '../../types/application';
 import styles from './ApplicationList.module.scss';
 
@@ -22,7 +23,7 @@ function ApplicationList({ applications, loading, error, statusError, updatingSt
       >
         <div className={styles.heading}>
           <h2 id="applications-title">Applications</h2>
-          <button className={styles.addButton} type="button" onClick={onAdd}>Add Application</button>
+          <PrimaryActionButton onClick={onAdd}>Add application</PrimaryActionButton>
         </div>
 
         {error && (

@@ -6,6 +6,7 @@ import ApplicationList from '../../components/ApplicationList/ApplicationList';
 import ApplicationWorkspace from '../../components/ApplicationWorkspace/ApplicationWorkspace';
 import EventBoard from '../../components/EventBoard/EventBoard';
 import EventDialog from '../../components/EventDialog/EventDialog';
+import PrimaryActionButton from '../../components/PrimaryActionButton/PrimaryActionButton';
 import { useAuth } from '../../auth/useAuth';
 import BrandLogo from '../../components/BrandLogo/BrandLogo';
 import { useApplications } from '../../hooks/useApplications';
@@ -184,14 +185,9 @@ function ApplicationsPage() {
             <p>{currentPage.description}</p>
           </div>
           {visibleTab === 'dashboard' && (
-            <button
-              type="button"
-              className={styles.primaryAction}
-              onClick={() => setAddingApplication(true)}
-            >
-              <span aria-hidden="true">＋</span>
+            <PrimaryActionButton onClick={() => setAddingApplication(true)}>
               Add application
-            </button>
+            </PrimaryActionButton>
           )}
         </header>
 

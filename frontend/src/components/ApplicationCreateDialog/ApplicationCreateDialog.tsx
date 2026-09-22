@@ -13,8 +13,18 @@ export default function ApplicationCreateDialog({ onClose, onSaved }: Props) {
 
   useEffect(() => {
     const element = dialog.current;
+    const previousOverflow = document.body.style.overflow;
+    const previousOverscrollBehavior = document.body.style.overscrollBehavior;
+
+    document.body.style.overflow = 'hidden';
+    document.body.style.overscrollBehavior = 'none';
     element?.showModal();
-    return () => element?.close();
+
+    return () => {
+      element?.close();
+      document.body.style.overflow = previousOverflow;
+      document.body.style.overscrollBehavior = previousOverscrollBehavior;
+    };
   }, []);
 
   return <dialog ref={dialog} className={styles.dialog} aria-labelledby="application-create-title"
