@@ -36,3 +36,21 @@ export function logout() {
     method: 'POST',
   });
 }
+
+export function requestPasswordReset(email: string) {
+  return requestVoid('/auth/forgotPassword', {
+    method: 'POST',
+    body: JSON.stringify({ email }),
+  });
+}
+
+export function resetPassword(
+  email: string,
+  resetCode: string,
+  newPassword: string,
+) {
+  return requestVoid('/auth/resetPassword', {
+    method: 'POST',
+    body: JSON.stringify({ email, resetCode, newPassword }),
+  });
+}

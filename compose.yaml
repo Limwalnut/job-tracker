@@ -24,6 +24,10 @@ services:
       ConnectionStrings__DefaultConnection: "Host=db;Port=5432;Database=jobtracker;Username=jobtracker;Password=${POSTGRES_PASSWORD}"
       Authentication__Google__ClientId: ${GOOGLE_CLIENT_ID:-}
       Authentication__Google__ClientSecret: ${GOOGLE_CLIENT_SECRET:-}
+      Email__ApiKey: ${RESEND_API_KEY:-}
+      Email__FromAddress: ${EMAIL_FROM_ADDRESS:-no-reply@mail.applyline.app}
+      Email__FromName: ${EMAIL_FROM_NAME:-Applyline}
+      Email__FrontendBaseUrl: ${EMAIL_FRONTEND_BASE_URL:-https://applyline.app}
     ports:
       - "127.0.0.1:10000:10000"
     depends_on:

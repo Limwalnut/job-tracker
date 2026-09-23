@@ -89,7 +89,10 @@ function LoginPage() {
           </label>
 
           <label className={styles.field}>
-            <span>Password</span>
+            <span className={styles.fieldHeading}>
+              <span>Password</span>
+              <Link to="/forgot-password">Forgot password?</Link>
+            </span>
             <input
               type="password"
               name="password"

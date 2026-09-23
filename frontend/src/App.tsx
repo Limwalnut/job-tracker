@@ -7,6 +7,8 @@ import RequireAuth from "./auth/RequireAuth";
 import PrivacyPage from "./pages/PrivacyPage/PrivacyPage";
 import TermsPage from "./pages/TermsPage/TermsPage";
 import PageMetadata from "./components/PageMetadata/PageMetadata";
+import ForgotPasswordPage from "./pages/ForgotPasswordPage/ForgotPasswordPage";
+import ResetPasswordPage from "./pages/ResetPasswordPage/ResetPasswordPage";
 
 const privatePageMetadata = (
   <PageMetadata
@@ -30,6 +32,14 @@ function App() {
       <Route
         path="/register"
         element={<><PageMetadata canonicalPath="/register" description="Create your Applyline account." noIndex title="Create an account | Applyline" /><RegisterPage /></>}
+      />
+      <Route
+        path="/forgot-password"
+        element={<><PageMetadata canonicalPath="/forgot-password" description="Reset your Applyline password." noIndex title="Forgot password | Applyline" /><ForgotPasswordPage /></>}
+      />
+      <Route
+        path="/reset-password"
+        element={<><PageMetadata canonicalPath="/reset-password" description="Choose a new Applyline password." noIndex title="Reset password | Applyline" /><ResetPasswordPage /></>}
       />
       <Route
         path="/applications"

@@ -8,6 +8,8 @@ using Microsoft.AspNetCore.DataProtection;
 using Microsoft.AspNetCore.DataProtection.EntityFrameworkCore;
 using Microsoft.AspNetCore.HttpOverrides;
 using JobTracker.Api.Authentication;
+using JobTracker.Api.Services;
+using System.Threading.RateLimiting;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -60,6 +62,21 @@ builder.Services
     .AddIdentityApiEndpoints<ApplicationUser>()
     .AddEntityFrameworkStores<AppDbContext>();
 
+builder.Services.Configure<DataProtectionTokenProviderOptions>(options =>
+{
+    options.TokenLifespan = TimeSpan.FromHours(1);
+});
+
+builder.Services.Configure<EmailOptions>(
+    builder.Configuration.GetSection(EmailOptions.SectionName));
+builder.Services.AddHttpClient<ResendEmailSender>(client =>
+{
+    client.BaseAddress = new Uri("https://api.resend.com/");
+    client.Timeout = TimeSpan.FromSeconds(15);
+});
+builder.Services.AddTransient<IEmailSender<ApplicationUser>>(services =>
+    services.GetRequiredService<ResendEmailSender>());
+
 var googleClientId = builder.Configuration["Authentication:Google:ClientId"];
 var googleClientSecret = builder.Configuration["Authentication:Google:ClientSecret"];
 var googleAuthenticationEnabled =
@@ -102,6 +119,20 @@ builder.Services.ConfigureApplicationCookie(options =>
 });
 
 builder.Services.AddAuthorization();
+builder.Services.AddRateLimiter(options =>
+{
+    options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
+    options.AddPolicy("identity", context =>
+        RateLimitPartition.GetFixedWindowLimiter(
+            partitionKey: context.Connection.RemoteIpAddress?.ToString() ?? "unknown",
+            factory: _ => new FixedWindowRateLimiterOptions
+            {
+                AutoReplenishment = true,
+                PermitLimit = 20,
+                QueueLimit = 0,
+                Window = TimeSpan.FromMinutes(5)
+            }));
+});
 
 var app = builder.Build();
 
@@ -112,6 +143,7 @@ var forwardedHeadersOptions = new ForwardedHeadersOptions
 forwardedHeadersOptions.KnownIPNetworks.Clear();
 forwardedHeadersOptions.KnownProxies.Clear();
 app.UseForwardedHeaders(forwardedHeadersOptions);
+app.UseRateLimiter();
 
 app.Use(async (context, next) =>
 {
@@ -121,6 +153,8 @@ app.Use(async (context, next) =>
         path.StartsWithSegments("/health") ||
         path.StartsWithSegments("/login") ||
         path.StartsWithSegments("/register") ||
+        path.StartsWithSegments("/forgot-password") ||
+        path.StartsWithSegments("/reset-password") ||
         path.StartsWithSegments("/applications");
 
     if (shouldPreventIndexing)
@@ -164,7 +198,8 @@ app.UseAuthentication();
 app.UseAuthorization();
 var auth = app.MapGroup("/api/auth");
 
-auth.MapIdentityApi<ApplicationUser>();
+auth.MapIdentityApi<ApplicationUser>()
+    .RequireRateLimiting("identity");
 
 auth.MapGoogleAuthentication(
     googleAuthenticationEnabled,
