@@ -67,6 +67,9 @@ public class AppDbContext :
         eventEntity.Property(applicationEvent => applicationEvent.Status)
             .HasConversion<string>();
 
+        eventEntity.Property(applicationEvent => applicationEvent.InterviewOutcome)
+            .HasConversion<string>();
+
         eventEntity.Property(applicationEvent => applicationEvent.Title)
             .HasMaxLength(200);
 
@@ -78,6 +81,9 @@ public class AppDbContext :
 
         eventEntity.Property(applicationEvent => applicationEvent.Notes)
             .HasMaxLength(4000);
+
+        eventEntity.Property(applicationEvent => applicationEvent.InterviewStage)
+            .HasMaxLength(100);
 
         eventEntity.HasOne(applicationEvent => applicationEvent.Application)
             .WithMany()

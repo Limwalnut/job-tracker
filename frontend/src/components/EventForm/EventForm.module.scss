@@ -52,6 +52,37 @@
     padding: 0 12px;
   }
 
+  input[type='date'],
+  input[type='time'] {
+    width: 100% !important;
+    display: block;
+    min-width: 0 !important;
+    max-width: 100% !important;
+    inline-size: 100% !important;
+    min-inline-size: 0 !important;
+    max-inline-size: 100% !important;
+    overflow: hidden;
+    line-height: normal;
+
+    &::-webkit-date-and-time-value {
+      height: 100%;
+      display: flex;
+      align-items: center;
+      min-width: 0;
+      margin: 0;
+      padding: 0;
+      line-height: normal;
+      text-align: left;
+    }
+
+    &::-webkit-datetime-edit {
+      height: 100%;
+      display: flex;
+      align-items: center;
+      padding: 0;
+    }
+  }
+
   textarea {
     min-height: 106px;
     padding: 11px 12px;
@@ -190,4 +221,9 @@
   .fullWidth { grid-column: auto; }
   .statusOptions { width: 100%; }
   .statusOptions button { flex: 1; }
+  .field input[type='date'],
+  .field input[type='time'] {
+    appearance: none;
+    -webkit-appearance: none;
+  }
 }

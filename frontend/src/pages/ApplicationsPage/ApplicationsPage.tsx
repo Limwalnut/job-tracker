@@ -10,10 +10,19 @@ import PrimaryActionButton from '../../components/PrimaryActionButton/PrimaryAct
 import { useAuth } from '../../auth/useAuth';
 import BrandLogo from '../../components/BrandLogo/BrandLogo';
 import { useApplications } from '../../hooks/useApplications';
+import { getApplicationEvents } from '../../api/events';
 import type { ApplicationStatus } from '../../types/application';
+import type { EventType, ScheduleOpenRequest } from '../../types/event';
 import styles from './ApplicationsPage.module.scss';
 
 type ActiveTab = 'dashboard' | 'applications' | 'calendar';
+type SchedulableStatus = Extract<ApplicationStatus, 'Assessment' | 'Interviewing'>;
+
+interface ScheduleSuggestion {
+  applicationId: number;
+  type: Extract<EventType, 'Interview' | 'Assessment'>;
+  hasExistingEvent: boolean;
+}
 
 const navigationItems: Array<{ id: ActiveTab; label: string; icon: ReactNode }> = [
   {
@@ -68,6 +77,8 @@ function ApplicationsPage() {
   const [addingEvent, setAddingEvent] = useState(false);
   const [updatingStatusIds, setUpdatingStatusIds] = useState<Set<number>>(() => new Set());
   const [statusError, setStatusError] = useState<string | null>(null);
+  const [scheduleSuggestion, setScheduleSuggestion] = useState<ScheduleSuggestion | null>(null);
+  const [scheduleRequest, setScheduleRequest] = useState<ScheduleOpenRequest | null>(null);
 
   const parsedApplicationId = applicationId ? Number(applicationId) : null;
   const viewingApplicationId = parsedApplicationId !== null
@@ -102,11 +113,13 @@ function ApplicationsPage() {
 
   function closeApplication() {
     setActiveTab('applications');
+    setScheduleRequest(null);
     navigate('/applications');
   }
 
   function showTab(tab: ActiveTab) {
     setActiveTab(tab);
+    setScheduleRequest(null);
     if (applicationId) {
       navigate('/applications');
     }
@@ -118,6 +131,9 @@ function ApplicationsPage() {
 
     try {
       await changeStatus(id, status);
+      if (status === 'Assessment' || status === 'Interviewing') {
+        await offerSchedule(id, status);
+      }
     } catch (error) {
       setStatusError(
         error instanceof Error
@@ -131,6 +147,39 @@ function ApplicationsPage() {
         return next;
       });
     }
+  }
+
+  async function offerSchedule(id: number, status: SchedulableStatus) {
+    const type = status === 'Interviewing' ? 'Interview' : 'Assessment';
+    let hasExistingEvent = false;
+
+    try {
+      const events = await getApplicationEvents(id);
+      const now = Date.now();
+      hasExistingEvent = events.some(event =>
+        event.type === type
+        && event.status !== 'Cancelled'
+        && Date.parse(event.endsAt) >= now,
+      );
+    } catch {
+      // The status update has already succeeded, so a schedule lookup failure
+      // should not turn it into an error or block the follow-up action.
+    }
+
+    setScheduleSuggestion({ applicationId: id, type, hasExistingEvent });
+  }
+
+  function followScheduleSuggestion() {
+    if (!scheduleSuggestion) return;
+
+    setScheduleRequest({
+      requestId: Date.now(),
+      applicationId: scheduleSuggestion.applicationId,
+      type: scheduleSuggestion.type,
+      mode: scheduleSuggestion.hasExistingEvent ? 'view' : 'create',
+    });
+    setScheduleSuggestion(null);
+    openApplication(scheduleSuggestion.applicationId);
   }
 
   async function handleLogout() {
@@ -322,12 +371,18 @@ function ApplicationsPage() {
             )}
             {viewingApplicationId !== null && !loading && !error && (
               <ApplicationWorkspace
-                key={viewingApplicationId}
+                key={`${viewingApplicationId}-${scheduleRequest?.requestId ?? 'default'}`}
                 applications={applications}
                 selectedId={viewingApplicationId}
                 onBack={closeApplication}
                 onDelete={(id) => setSelected({ id, mode: 'delete' })}
                 onChanged={refreshAll}
+                onStatusChanged={(status) => {
+                  if (status === 'Assessment' || status === 'Interviewing') {
+                    void offerSchedule(viewingApplicationId, status);
+                  }
+                }}
+                scheduleRequest={scheduleRequest}
               />
             )}
           </section>
@@ -375,6 +430,25 @@ function ApplicationsPage() {
             }
           }}
         />
+      )}
+      {scheduleSuggestion && (
+        <aside className={styles.schedulePrompt} aria-live="polite" aria-label="Schedule next step">
+          <div className={styles.schedulePromptIcon} aria-hidden="true">
+            <svg viewBox="0 0 24 24"><path d="M7 3v3m10-3v3M4 9h16M5 5h14a1 1 0 0 1 1 1v14H4V6a1 1 0 0 1 1-1Z" /><path d="m9 14 2 2 4-4" /></svg>
+          </div>
+          <div className={styles.schedulePromptCopy}>
+            <strong>{scheduleSuggestion.hasExistingEvent ? 'This next step is already scheduled' : `Add the ${scheduleSuggestion.type.toLowerCase()} to your schedule?`}</strong>
+            <span>{scheduleSuggestion.hasExistingEvent
+              ? 'Open the application schedule to review the details.'
+              : `Keep the date and details with this application.`}</span>
+          </div>
+          <div className={styles.schedulePromptActions}>
+            <button type="button" className={styles.schedulePromptPrimary} onClick={followScheduleSuggestion}>
+              {scheduleSuggestion.hasExistingEvent ? 'View schedule' : `Schedule ${scheduleSuggestion.type.toLowerCase()}`}
+            </button>
+            <button type="button" className={styles.schedulePromptDismiss} onClick={() => setScheduleSuggestion(null)}>Not now</button>
+          </div>
+        </aside>
       )}
     </div>
   );

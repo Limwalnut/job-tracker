@@ -32,6 +32,11 @@ builder.Services.AddControllers()
                 allowIntegerValues: false));
 
         options.JsonSerializerOptions.Converters.Add(
+            new JsonStringEnumConverter<InterviewOutcome>(
+                namingPolicy: null,
+                allowIntegerValues: false));
+
+        options.JsonSerializerOptions.Converters.Add(
             new JsonStringEnumConverter<ApplicationStatusChangeSource>(
                 namingPolicy: null,
                 allowIntegerValues: false));

@@ -3,6 +3,7 @@ import { DateTime } from 'luxon';
 import { getEvents } from '../../api/events';
 import type { ApplicationEvent, EventType } from '../../types/event';
 import styles from './EventBoard.module.scss';
+import { eventDescriptor } from '../../utils/eventPresentation';
 
 interface Props {
   revision: number;
@@ -45,7 +46,7 @@ export default function EventBoard({ revision, onAddEvent, onSelect }: Props) {
       onClick={() => onSelect(event.applicationId)}>
       <strong>{event.isAllDay ? 'All day' : DateTime.fromISO(event.startsAt).setZone(zone).toFormat('HH:mm')} · {event.title}</strong>
       <span>{event.companyName} · {event.jobTitle}</span>
-      <small>{event.type} · {event.status}</small>
+      <small>{eventDescriptor(event)}</small>
     </button>;
   }
 

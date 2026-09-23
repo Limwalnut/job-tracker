@@ -117,9 +117,28 @@ public class EventsController : ControllerBase
             });
         }
 
+        if (request.Type == ApplicationEventType.Interview &&
+            request.InterviewOutcome is InterviewOutcome.Passed or InterviewOutcome.Failed &&
+            request.Status != ApplicationEventStatus.Completed)
+        {
+            ModelState.AddModelError(
+                nameof(request.Status),
+                "An interview with a passed or failed result must be completed.");
+            return ValidationProblem(ModelState);
+        }
+
         applicationEvent.Title = request.Title.Trim();
         applicationEvent.Type = request.Type!.Value;
         applicationEvent.Status = request.Status!.Value;
+        applicationEvent.InterviewRound = request.Type == ApplicationEventType.Interview
+            ? request.InterviewRound
+            : null;
+        applicationEvent.InterviewStage = request.Type == ApplicationEventType.Interview
+            ? request.InterviewStage?.Trim()
+            : null;
+        applicationEvent.InterviewOutcome = request.Type == ApplicationEventType.Interview
+            ? request.InterviewOutcome ?? InterviewOutcome.Pending
+            : null;
         applicationEvent.StartsAt = request.StartsAt!.Value.ToUniversalTime();
         applicationEvent.EndsAt = request.EndsAt!.Value.ToUniversalTime();
         applicationEvent.IsAllDay = request.IsAllDay;

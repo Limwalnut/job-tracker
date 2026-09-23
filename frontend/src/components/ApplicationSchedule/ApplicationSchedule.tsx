@@ -1,20 +1,31 @@
 import { useEffect, useState } from 'react';
 import { DateTime } from 'luxon';
 import { deleteEvent, getApplicationEvents } from '../../api/events';
-import type { ApplicationEvent } from '../../types/event';
+import type { ApplicationEvent, EventType, ScheduleOpenRequest } from '../../types/event';
 import type { JobApplication } from '../../types/application';
 import EventForm from '../EventForm/EventForm';
 import WorkspaceActionButton from '../WorkspaceActionButton/WorkspaceActionButton';
 import WorkspaceEmptyState from '../WorkspaceEmptyState/WorkspaceEmptyState';
+import { eventDescriptor } from '../../utils/eventPresentation';
 import styles from './ApplicationSchedule.module.scss';
 
-interface Props { application: JobApplication; onChanged: () => void; onBusyChange: (busy: boolean) => void; }
-export default function ApplicationSchedule({ application, onChanged, onBusyChange }: Props) {
+interface Props {
+  application: JobApplication;
+  onChanged: () => void;
+  onBusyChange: (busy: boolean) => void;
+  scheduleRequest?: ScheduleOpenRequest | null;
+}
+export default function ApplicationSchedule({ application, onChanged, onBusyChange, scheduleRequest }: Props) {
+  const requestedCreationType = scheduleRequest?.applicationId === application.id
+    && scheduleRequest.mode === 'create'
+    ? scheduleRequest.type
+    : undefined;
   const [events, setEvents] = useState<ApplicationEvent[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [revision, setRevision] = useState(0);
-  const [creating, setCreating] = useState(false);
+  const [creating, setCreating] = useState(Boolean(requestedCreationType));
+  const [creationType, setCreationType] = useState<EventType | undefined>(requestedCreationType);
   const [editing, setEditing] = useState<ApplicationEvent | null>(null);
   const [deleting, setDeleting] = useState<number | null>(null);
   const [busy, setBusy] = useState(false);
@@ -28,7 +39,7 @@ export default function ApplicationSchedule({ application, onChanged, onBusyChan
     return () => controller.abort();
   }, [application.id, revision]);
   function setSaving(value: boolean) { setBusy(value); onBusyChange(value); }
-  function changed() { setCreating(false); setEditing(null); setRevision(x => x + 1); onChanged(); }
+  function changed() { setCreating(false); setCreationType(undefined); setEditing(null); setRevision(x => x + 1); onChanged(); }
   async function remove(event: ApplicationEvent, revertApplicationStatus: boolean) {
     if (busy) return;
     setSaving(true); setError(null);
@@ -61,6 +72,7 @@ export default function ApplicationSchedule({ application, onChanged, onBusyChan
       <h3>Schedule</h3>
       {!creating && !editing && <WorkspaceActionButton icon="add" variant="accent" disabled={busy} onClick={() => {
         setEditing(null);
+        setCreationType(undefined);
         setCreating(true);
       }}>
         Add Event
@@ -68,7 +80,8 @@ export default function ApplicationSchedule({ application, onChanged, onBusyChan
     </div>
     {error && <p role="alert">{error} <button type="button" onClick={() => setRevision(x => x + 1)}>Retry</button></p>}
     {creating || editing ? <div className={styles.eventEditor}><EventForm application={application} event={editing ?? undefined}
-      onSaved={changed} onCancel={() => { setCreating(false); setEditing(null); }} onBusyChange={setSaving} /></div> : <>
+      initialType={creationType} skipStatusSync={Boolean(creationType)}
+      onSaved={changed} onCancel={() => { setCreating(false); setCreationType(undefined); setEditing(null); }} onBusyChange={setSaving} /></div> : <>
       {loading && <p role="status">Loading schedule...</p>}
       {!loading && events.length === 0 && <WorkspaceEmptyState
         className={styles.empty}
@@ -76,7 +89,12 @@ export default function ApplicationSchedule({ application, onChanged, onBusyChan
         title="No events scheduled"
         description="Add an interview, assessment, or follow-up to keep the next step visible."
       />}
-      <ul className={styles.list}>{events.map(event => <li
+      <ul className={styles.list}>{events.map(event => {
+        const eventName = event.type === 'Interview' && event.interviewRound
+          ? `Round ${event.interviewRound}`
+          : event.title;
+
+        return <li
         key={event.id}
         className={`${styles.eventCard} ${styles[event.type]}`}
         data-status={event.status}
@@ -85,13 +103,13 @@ export default function ApplicationSchedule({ application, onChanged, onBusyChan
           <div>
             <time dateTime={event.startsAt}>{formatRange(event)}</time>
             <strong>{event.title}</strong>
-            <span>{event.type} · {event.status}</span>
+            <span>{eventDescriptor(event)}</span>
           </div>
           {event.status !== 'Cancelled' && <div className={styles.eventActions}>
             <button type="button" disabled={busy} aria-label={`Edit ${event.title}`} title="Edit event" onClick={() => { setCreating(false); setEditing(event); }}>
               <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m4 16.5-.7 4.2 4.2-.7L19 8.5 15.5 5 4 16.5Z" /><path d="m13.8 6.7 3.5 3.5" /></svg>
             </button>
-            <button className={styles.deleteButton} type="button" disabled={busy} aria-label={`Delete ${event.title}`} title="Delete event" onClick={() => setDeleting(event.id)}>
+            <button className={styles.deleteButton} type="button" disabled={busy} aria-label={`Delete ${eventName}`} title={`Delete ${eventName}`} onClick={() => setDeleting(event.id)}>
               <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M9 7V4h6v3m3 0-1 13H7L6 7m4 4v5m4-5v5" /></svg>
             </button>
           </div>}
@@ -101,14 +119,15 @@ export default function ApplicationSchedule({ application, onChanged, onBusyChan
           {event.notes && <p className={styles.notes}>{event.notes}</p>}
         </div>}
         {deleting === event.id && <div className={styles.deleteConfirmation} role="group" aria-label="Confirm event deletion">
-          <p>Permanently delete this event?</p>
+          <p>Permanently delete {eventName}?</p>
           <div>
-            <button className={styles.confirmDelete} type="button" disabled={busy} onClick={() => void remove(event, false)}>Delete event</button>
-            {event.updatedApplicationStatus && <button className={styles.confirmDelete} type="button" disabled={busy} onClick={() => void remove(event, true)}>Delete and return status</button>}
-            <button type="button" disabled={busy} onClick={() => setDeleting(null)}>Keep event</button>
+            <button className={styles.confirmDelete} type="button" disabled={busy} onClick={() => void remove(event, false)}>{event.type === 'Interview' ? 'Delete this round' : 'Delete event'}</button>
+            {event.updatedApplicationStatus && <button className={styles.confirmDelete} type="button" disabled={busy} onClick={() => void remove(event, true)}>{event.type === 'Interview' ? 'Delete round and return status' : 'Delete and return status'}</button>}
+            <button type="button" disabled={busy} onClick={() => setDeleting(null)}>Cancel</button>
           </div>
         </div>}
-      </li>)}</ul>
+      </li>;
+      })}</ul>
     </>}
   </section>;
 }

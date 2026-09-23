@@ -7,6 +7,7 @@ import StatusBadge from '../StatusBadge/StatusBadge';
 import WorkspaceActionButton from '../WorkspaceActionButton/WorkspaceActionButton';
 import WorkspaceEmptyState from '../WorkspaceEmptyState/WorkspaceEmptyState';
 import type { JobApplication } from '../../types/application';
+import type { ScheduleOpenRequest } from '../../types/event';
 import styles from './ApplicationWorkspace.module.scss';
 
 interface Props {
@@ -15,12 +16,16 @@ interface Props {
   onBack: () => void;
   onDelete: (id: number) => void;
   onChanged: () => void;
+  onStatusChanged: (status: JobApplication['status']) => void;
+  scheduleRequest?: ScheduleOpenRequest | null;
 }
 
-export default function ApplicationWorkspace({ applications, selectedId, onBack, onDelete, onChanged }: Props) {
+export default function ApplicationWorkspace({ applications, selectedId, onBack, onDelete, onChanged, onStatusChanged, scheduleRequest }: Props) {
   const application = applications.find(item => item.id === selectedId);
   const [isEditing, setIsEditing] = useState(false);
-  const [detailTab, setDetailTab] = useState<'jobDescription' | 'notes' | 'schedule'>('jobDescription');
+  const [detailTab, setDetailTab] = useState<'jobDescription' | 'notes' | 'schedule'>(
+    scheduleRequest?.applicationId === selectedId ? 'schedule' : 'jobDescription',
+  );
   const [editingSection, setEditingSection] = useState<'jobDescription' | 'notes' | null>(null);
   const [contentDraft, setContentDraft] = useState('');
   const [savingSection, setSavingSection] = useState(false);
@@ -136,9 +141,10 @@ export default function ApplicationWorkspace({ applications, selectedId, onBack,
                 application={application}
                 hideHeading
                 onCancel={() => setIsEditing(false)}
-                onCreated={() => {
+                onCreated={(statusChangedTo) => {
                   onChanged();
                   setIsEditing(false);
+                  if (statusChangedTo) onStatusChanged(statusChangedTo);
                 }}
               />
             </div>
@@ -243,7 +249,8 @@ export default function ApplicationWorkspace({ applications, selectedId, onBack,
                 aria-labelledby="application-schedule-tab"
                 hidden={detailTab !== 'schedule'}
               >
-                <ApplicationSchedule application={application} onBusyChange={() => undefined} onChanged={() => {
+                <ApplicationSchedule application={application} scheduleRequest={scheduleRequest}
+                  onBusyChange={() => undefined} onChanged={() => {
                   setJourneyRevision(value => value + 1);
                   onChanged();
                 }} />

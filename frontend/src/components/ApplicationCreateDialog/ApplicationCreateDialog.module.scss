@@ -11,10 +11,30 @@
   border-radius: 16px;
   color: #1f2937;
   box-shadow: 0 24px 80px #0f172a40;
+  transform-origin: 50% 38%;
 
-  &::backdrop { background: #0f172a88; }
+  &[open] { animation: application-dialog-enter 220ms cubic-bezier(.2, .8, .2, 1); }
+  &::backdrop {
+    background: #0f172a88;
+    animation: application-backdrop-enter 180ms ease-out;
+  }
   button { cursor: pointer; }
   button:disabled { opacity: .6; cursor: wait; }
+}
+
+@keyframes application-dialog-enter {
+  from { opacity: 0; transform: translateY(14px) scale(.985); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+@keyframes application-backdrop-enter {
+  from { background: #0f172a00; }
+  to { background: #0f172a88; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .dialog,
+  .dialog::backdrop { animation: none; }
 }
 
 .heading {

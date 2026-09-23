@@ -1,8 +1,9 @@
-import { useId, useRef, useState } from 'react';
+import { useEffect, useId, useRef, useState } from 'react';
 import type { SubmitEvent } from 'react';
 import { DateTime } from 'luxon';
-import { createEvent, updateEvent } from '../../api/events';
-import type { ApplicationEvent, EventStatus, EventType } from '../../types/event';
+import { createEvent, getApplicationEvents, updateEvent } from '../../api/events';
+import { interviewStages } from '../../types/event';
+import type { ApplicationEvent, EventStatus, EventType, InterviewOutcome } from '../../types/event';
 import type { JobApplication } from '../../types/application';
 import styles from './EventForm.module.scss';
 
@@ -14,6 +15,8 @@ interface Props {
   onSaved: () => void;
   onCancel: () => void;
   onBusyChange: (busy: boolean) => void;
+  initialType?: EventType;
+  skipStatusSync?: boolean;
 }
 
 const defaultNames: Record<EventType, string> = {
@@ -30,7 +33,7 @@ function durationLabel(minutes: number) {
   return `${hours} ${hours === 1 ? 'hour' : 'hours'}`;
 }
 
-export default function EventForm({ application, applications = [], event, hideHeading = false, onSaved, onCancel, onBusyChange }: Props) {
+export default function EventForm({ application, applications = [], event, hideHeading = false, onSaved, onCancel, onBusyChange, initialType, skipStatusSync = false }: Props) {
   const id = useId();
   const lock = useRef(false);
   const browserZone = Intl.DateTimeFormat().resolvedOptions().timeZone;
@@ -47,13 +50,17 @@ export default function EventForm({ application, applications = [], event, hideH
     ? durationOptions
     : [...durationOptions, initialDuration].sort((a, b) => a - b);
 
-  const [type, setType] = useState<EventType>(event?.type ?? 'Interview');
-  const [eventName, setEventName] = useState(event?.title ?? defaultNames.Interview);
+  const startingType = event?.type ?? initialType ?? 'Interview';
+  const [type, setType] = useState<EventType>(startingType);
+  const [eventName, setEventName] = useState(event?.title ?? defaultNames[startingType]);
   const [date, setDate] = useState(initialStart.toISODate() ?? '');
   const [hasTime, setHasTime] = useState(event ? !event.isAllDay : false);
   const [time, setTime] = useState(initialStart.toFormat('HH:mm'));
   const [duration, setDuration] = useState(initialDuration);
   const [status, setStatus] = useState<EventStatus>(event?.status ?? 'Scheduled');
+  const [interviewRound, setInterviewRound] = useState<number | ''>(event?.interviewRound ?? '');
+  const [interviewStage, setInterviewStage] = useState(event?.interviewStage ?? '');
+  const [interviewOutcome, setInterviewOutcome] = useState<InterviewOutcome>(event?.interviewOutcome ?? 'Pending');
   const [location, setLocation] = useState(event?.locationOrLink ?? '');
   const [notes, setNotes] = useState(event?.notes ?? '');
   const [sync, setSync] = useState(true);
@@ -61,14 +68,43 @@ export default function EventForm({ application, applications = [], event, hideH
   const [error, setError] = useState<string | null>(null);
   const [applicationId, setApplicationId] = useState<number | ''>(application?.id ?? '');
   const selectedApplication = application ?? applications.find(item => item.id === applicationId);
-  const canSync = Boolean(!event && selectedApplication && (type === 'Interview'
+  const canSync = Boolean(!skipStatusSync && !event && selectedApplication && (type === 'Interview'
     ? ['Applied', 'Screening', 'Assessment', 'Interviewing'].includes(selectedApplication.status)
     : type === 'Assessment' && ['Applied', 'Screening', 'Assessment'].includes(selectedApplication.status)));
+
+  useEffect(() => {
+    if (type !== 'Interview' || !selectedApplication || event?.type === 'Interview') return;
+
+    const controller = new AbortController();
+    getApplicationEvents(selectedApplication.id, controller.signal)
+      .then(events => {
+        if (controller.signal.aborted) return;
+        const interviews = events.filter(item => item.type === 'Interview');
+        const highestRound = Math.max(0, ...interviews.map(item => item.interviewRound ?? 0));
+        setInterviewRound(Math.max(interviews.length, highestRound) + 1);
+      })
+      .catch(() => {
+        if (!controller.signal.aborted) setInterviewRound(1);
+      });
+
+    return () => controller.abort();
+  }, [event, selectedApplication, type]);
 
   function changeType(nextType: EventType) {
     const previousDefault = defaultNames[type];
     setType(nextType);
     setEventName(current => !current.trim() || current === previousDefault ? defaultNames[nextType] : current);
+    if (nextType === 'Interview') {
+      setInterviewRound('');
+    } else {
+      setInterviewStage('');
+      setInterviewOutcome('Pending');
+    }
+  }
+
+  function changeInterviewOutcome(outcome: InterviewOutcome) {
+    setInterviewOutcome(outcome);
+    if (outcome !== 'Pending') setStatus('Completed');
   }
 
   async function submit(e: SubmitEvent<HTMLFormElement>) {
@@ -119,6 +155,9 @@ export default function EventForm({ application, applications = [], event, hideH
       timeZone: zone,
       locationOrLink: location.trim() || null,
       notes: notes.trim() || null,
+      interviewRound: type === 'Interview' && interviewRound !== '' ? interviewRound : null,
+      interviewStage: type === 'Interview' ? interviewStage || null : null,
+      interviewOutcome: type === 'Interview' ? interviewOutcome : null,
       updateApplicationStatus: Boolean(canSync && sync),
     };
 
@@ -143,7 +182,10 @@ export default function EventForm({ application, applications = [], event, hideH
       <div className={styles.grid}>
         {!application && <label className={`${styles.field} ${styles.fullWidth}`} htmlFor={`${id}-application`}>
           <span>Application</span>
-          <select id={`${id}-application`} required value={applicationId} onChange={e => setApplicationId(e.target.value ? Number(e.target.value) : '')}>
+          <select id={`${id}-application`} required value={applicationId} onChange={e => {
+            setApplicationId(e.target.value ? Number(e.target.value) : '');
+            setInterviewRound('');
+          }}>
             <option value="">Select an application</option>
             {applications.map(item => <option key={item.id} value={item.id}>{item.companyName} — {item.jobTitle}</option>)}
           </select>
@@ -162,6 +204,43 @@ export default function EventForm({ application, applications = [], event, hideH
           <span>Event Name</span>
           <input id={`${id}-name`} required maxLength={200} value={eventName} onChange={e => setEventName(e.target.value)} placeholder="e.g. Technical interview" />
         </label>
+
+        {type === 'Interview' && <>
+          <label className={styles.field} htmlFor={`${id}-interview-round`}>
+            <span>Interview Round</span>
+            <input
+              id={`${id}-interview-round`}
+              type="number"
+              min="1"
+              max="99"
+              required
+              value={interviewRound}
+              onChange={e => setInterviewRound(e.target.value ? Number(e.target.value) : '')}
+              placeholder="Calculating next round…"
+            />
+          </label>
+
+          <label className={styles.field} htmlFor={`${id}-interview-stage`}>
+            <span>Interview Type <small>Optional</small></span>
+            <select id={`${id}-interview-stage`} value={interviewStage} onChange={e => setInterviewStage(e.target.value)}>
+              <option value="">Select interview type</option>
+              {interviewStages.map(stage => <option key={stage} value={stage}>{stage}</option>)}
+            </select>
+          </label>
+
+          <label className={styles.field} htmlFor={`${id}-interview-outcome`}>
+            <span>Interview Result</span>
+            <select
+              id={`${id}-interview-outcome`}
+              value={interviewOutcome}
+              onChange={e => changeInterviewOutcome(e.target.value as InterviewOutcome)}
+            >
+              <option value="Pending">Pending</option>
+              <option value="Passed">Passed</option>
+              <option value="Failed">Failed</option>
+            </select>
+          </label>
+        </>}
 
         <label className={styles.field} htmlFor={`${id}-date`}>
           <span>{type === 'Assessment' ? 'Due Date' : 'Date'}</span>
@@ -194,7 +273,12 @@ export default function EventForm({ application, applications = [], event, hideH
               key={value}
               type="button"
               aria-pressed={status === value}
-              onClick={() => setStatus(value)}
+              onClick={() => {
+                setStatus(value);
+                if (value === 'Scheduled' && interviewOutcome !== 'Pending') {
+                  setInterviewOutcome('Pending');
+                }
+              }}
             >{value}</button>)}
           </div>
         </div>}

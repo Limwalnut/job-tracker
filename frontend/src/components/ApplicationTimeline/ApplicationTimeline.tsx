@@ -1,6 +1,8 @@
 import { useEffect, useState } from 'react';
 import { getApplicationTimeline, undoLatestApplicationStatus } from '../../api/applications';
+import { getApplicationEvents } from '../../api/events';
 import type { ApplicationStatus, ApplicationStatusHistory, JobApplication } from '../../types/application';
+import type { ApplicationEvent } from '../../types/event';
 import StatusBadge from '../StatusBadge/StatusBadge';
 import styles from './ApplicationTimeline.module.scss';
 
@@ -36,6 +38,7 @@ export default function ApplicationTimeline({ application, refreshToken = 0, onC
   const [result, setResult] = useState<{
     key: string;
     entries: ApplicationStatusHistory[];
+    events: ApplicationEvent[];
     error: string | null;
   } | null>(null);
   const [undoing, setUndoing] = useState<number | null>(null);
@@ -45,14 +48,18 @@ export default function ApplicationTimeline({ application, refreshToken = 0, onC
 
   useEffect(() => {
     const controller = new AbortController();
-    getApplicationTimeline(application.id, controller.signal)
-      .then(entries => {
-        if (!controller.signal.aborted) setResult({ key: requestKey, entries, error: null });
+    Promise.all([
+      getApplicationTimeline(application.id, controller.signal),
+      getApplicationEvents(application.id, controller.signal).catch(() => [] as ApplicationEvent[]),
+    ])
+      .then(([entries, events]) => {
+        if (!controller.signal.aborted) setResult({ key: requestKey, entries, events, error: null });
       })
       .catch((problem: unknown) => {
         if (!controller.signal.aborted) setResult({
           key: requestKey,
           entries: [],
+          events: [],
           error: problem instanceof Error ? problem.message : 'Unable to load the application timeline.',
         });
       });
@@ -61,7 +68,26 @@ export default function ApplicationTimeline({ application, refreshToken = 0, onC
 
   const loading = result?.key !== requestKey;
   const entries = loading ? [] : result.entries.filter(entry => !entry.isReverted);
+  const interviewEvents = loading ? [] : result.events.filter(event => event.type === 'Interview');
+  const interviewEntryId = [...entries].reverse().find(entry => entry.toStatus === 'Interviewing')?.id;
   const error = loading ? null : result.error;
+
+  const interviewRounds = interviewEvents.length > 0 && <ul className={styles.interviewRounds}>
+    {interviewEvents.map(event => {
+      const occurredAt = new Date(event.startsAt);
+      const result = event.interviewOutcome && event.interviewOutcome !== 'Pending'
+        ? event.interviewOutcome
+        : event.status;
+
+      return <li key={event.id} data-result={result}>
+        <span>{event.interviewRound ?? '—'}</span>
+        <div>
+          <strong>{event.interviewStage || event.title}</strong>
+          <small>{dateFormatter.format(occurredAt)} · {result}</small>
+        </div>
+      </li>;
+    })}
+  </ul>;
 
   async function undo(entry: ApplicationStatusHistory) {
     if (undoing !== null) return;
@@ -105,17 +131,22 @@ export default function ApplicationTimeline({ application, refreshToken = 0, onC
             <StatusBadge status={entry.toStatus} />
             <p>{isCurrent ? 'Current stage' : describeChange(entry)}</p>
             {isCurrent && entry.fromStatus && <small>{describeChange(entry)}</small>}
+            {entry.id === interviewEntryId && interviewRounds}
             {entry.canUndo && (confirmingUndo === entry.id
               ? <div className={styles.undoConfirmation}>
-                  <span>Return to {entry.fromStatus}?</span>
+                  <span>Return the application to {entry.fromStatus}? Interview rounds will stay in Schedule.</span>
                   <button type="button" disabled={undoing !== null} onClick={() => void undo(entry)}>
-                    {undoing === entry.id ? 'Undoing…' : 'Confirm'}
+                    {undoing === entry.id ? 'Returning…' : 'Return status'}
                   </button>
-                  <button type="button" disabled={undoing !== null} onClick={() => setConfirmingUndo(null)}>Keep</button>
+                  <button type="button" disabled={undoing !== null} onClick={() => setConfirmingUndo(null)}>Cancel</button>
                 </div>
-              : <button className={styles.undoButton} type="button" onClick={() => setConfirmingUndo(entry.id)}>Undo status change</button>)}
+              : <button className={styles.undoButton} type="button" onClick={() => setConfirmingUndo(entry.id)}>Return to {entry.fromStatus}</button>)}
           </div>
         </li>;
       })}</ol>}
+    {!loading && !error && interviewRounds && !interviewEntryId && <div className={styles.unlinkedInterviews}>
+      <strong>Interview rounds</strong>
+      {interviewRounds}
+    </div>}
   </section>;
 }

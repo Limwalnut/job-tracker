@@ -62,18 +62,33 @@
     padding: 0 12px;
   }
 
-  // Mobile Safari gives date inputs an intrinsic width based on their
-  // localized value. Explicit logical sizing keeps that native control
-  // inside the same grid column as every other field.
   > input[type='date'] {
+    width: 100% !important;
     display: block;
-    inline-size: 100%;
-    min-inline-size: 0;
-    max-inline-size: 100%;
+    min-width: 0 !important;
+    max-width: 100% !important;
+    inline-size: 100% !important;
+    min-inline-size: 0 !important;
+    max-inline-size: 100% !important;
+    overflow: hidden;
+    line-height: normal;
 
     &::-webkit-date-and-time-value {
+      height: 100%;
+      display: flex;
+      align-items: center;
       min-width: 0;
+      margin: 0;
+      padding: 0;
+      line-height: normal;
       text-align: left;
+    }
+
+    &::-webkit-datetime-edit {
+      height: 100%;
+      display: flex;
+      align-items: center;
+      padding: 0;
     }
   }
 
@@ -132,4 +147,8 @@
   .card { padding: 16px; }
   .grid { grid-template-columns: 1fr; }
   .fullWidth { grid-column: auto; }
+  .field > input[type='date'] {
+    appearance: none;
+    -webkit-appearance: none;
+  }
 }

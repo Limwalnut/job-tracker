@@ -6,7 +6,7 @@ import type { ApplicationStatus, CreateApplicationRequest, JobApplication } from
 import styles from "./ApplicationForm.module.scss";
 
 interface ApplicationFormProps {
-  onCreated: () => void;
+  onCreated: (statusChangedTo?: ApplicationStatus) => void;
   application?: JobApplication;
   disabled?: boolean;
   hideHeading?: boolean;
@@ -97,7 +97,7 @@ function ApplicationForm({ onCreated, application, hideHeading = false, onCancel
     setNotes("");
     }
     setSuccess(application ? "Application updated successfully." : "Application added successfully.");
-    onCreated();
+    onCreated(application && status !== application.status ? status : undefined);
   }
 
   return (

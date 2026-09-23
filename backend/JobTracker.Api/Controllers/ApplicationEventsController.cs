@@ -120,12 +120,41 @@ public class ApplicationEventsController : ControllerBase
 
         }
 
+        int? interviewRound = null;
+        if (eventType == ApplicationEventType.Interview)
+        {
+            interviewRound = request.InterviewRound;
+            if (!interviewRound.HasValue)
+            {
+                var interviewEvents = _context.ApplicationEvents
+                    .Where(item =>
+                        item.ApplicationId == application.Id &&
+                        item.Type == ApplicationEventType.Interview);
+
+                var existingCount = await interviewEvents.CountAsync();
+                var highestRound = await interviewEvents
+                    .MaxAsync(item => (int?)item.InterviewRound) ?? 0;
+                interviewRound = Math.Max(existingCount, highestRound) + 1;
+            }
+        }
+
+        var interviewOutcome = eventType == ApplicationEventType.Interview
+            ? request.InterviewOutcome ?? InterviewOutcome.Pending
+            : (InterviewOutcome?)null;
+
         var applicationEvent = new ApplicationEvent
         {
             ApplicationId = application.Id,
             Title = request.Title.Trim(),
             Type = eventType,
-            Status = ApplicationEventStatus.Scheduled,
+            Status = interviewOutcome is InterviewOutcome.Passed or InterviewOutcome.Failed
+                ? ApplicationEventStatus.Completed
+                : ApplicationEventStatus.Scheduled,
+            InterviewRound = interviewRound,
+            InterviewStage = eventType == ApplicationEventType.Interview
+                ? request.InterviewStage?.Trim()
+                : null,
+            InterviewOutcome = interviewOutcome,
             StartsAt = request.StartsAt!.Value.ToUniversalTime(),
             EndsAt = request.EndsAt!.Value.ToUniversalTime(),
             IsAllDay = request.IsAllDay,

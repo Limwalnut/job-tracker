@@ -15,6 +15,12 @@ public class ApplicationEvent
     public ApplicationEventStatus Status { get; set; }
         = ApplicationEventStatus.Scheduled;
 
+    public int? InterviewRound { get; set; }
+
+    public string? InterviewStage { get; set; }
+
+    public InterviewOutcome? InterviewOutcome { get; set; }
+
     public DateTimeOffset StartsAt { get; set; }
 
     public DateTimeOffset EndsAt { get; set; }

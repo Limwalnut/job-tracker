@@ -31,11 +31,30 @@ public class CreateApplicationEventRequest : IValidatableObject
     [StringLength(4000)]
     public string? Notes { get; set; }
 
+    [Range(1, 99)]
+    public int? InterviewRound { get; set; }
+
+    [StringLength(100)]
+    public string? InterviewStage { get; set; }
+
+    [EnumDataType(typeof(InterviewOutcome))]
+    public InterviewOutcome? InterviewOutcome { get; set; }
+
     public bool UpdateApplicationStatus { get; set; }
 
     public IEnumerable<ValidationResult> Validate(
         ValidationContext validationContext)
     {
+        if (Type != ApplicationEventType.Interview &&
+            (InterviewRound.HasValue ||
+             !string.IsNullOrWhiteSpace(InterviewStage) ||
+             InterviewOutcome.HasValue))
+        {
+            yield return new ValidationResult(
+                "Interview details can only be added to interview events.",
+                new[] { nameof(InterviewRound), nameof(InterviewStage), nameof(InterviewOutcome) });
+        }
+
         if (!string.IsNullOrWhiteSpace(TimeZone))
         {
             TimeZoneInfo? zone = null;

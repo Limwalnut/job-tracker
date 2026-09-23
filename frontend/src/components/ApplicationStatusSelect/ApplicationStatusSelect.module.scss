@@ -1,64 +1,48 @@
 .statusSelect {
   min-width: 132px;
   height: 34px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 0 12px;
+  border: 1px solid transparent;
+  border-radius: 999px;
   color: inherit;
+  font: inherit;
+  font-size: 14px;
+  line-height: 1.4;
+  appearance: none;
+  -webkit-appearance: none;
+  cursor: pointer;
+  transition: border-color 150ms ease, box-shadow 150ms ease;
 
-  :global(.ant-select-selector) {
-    height: 34px !important;
-    padding: 0 32px 0 12px !important;
-    border: 1px solid transparent !important;
-    border-radius: 999px !important;
-    color: inherit !important;
-    box-shadow: none !important;
-    transition: border-color 150ms ease, box-shadow 150ms ease !important;
+  &:hover { border-color: rgb(15 23 42 / 18%); }
+
+  &:focus-visible {
+    border-color: #6366f1;
+    outline: none;
+    box-shadow: 0 0 0 3px rgb(99 102 241 / 14%);
   }
 
-  :global(.ant-select-content-has-value) {
-    display: flex !important;
-    height: 100% !important;
-    align-self: stretch !important;
-    align-items: center;
-    overflow: visible !important;
-    line-height: 1.4 !important;
+  &:disabled {
+    opacity: 0.72;
+    cursor: wait;
   }
-
-  :global(.ant-select-content-value) {
-    display: flex;
-    height: 100%;
-    align-items: center;
-    overflow: visible !important;
-  }
-
-  :global(.ant-select-arrow) { color: inherit; }
-
-  &:hover :global(.ant-select-selector) {
-    border-color: rgb(15 23 42 / 18%) !important;
-  }
-
-  &:global(.ant-select-focused) :global(.ant-select-selector) {
-    border-color: #6366f1 !important;
-    box-shadow: 0 0 0 3px rgb(99 102 241 / 14%) !important;
-  }
-
-  &:global(.ant-select-disabled) { opacity: 0.72; }
 }
 
 .fieldSize {
   height: 42px;
-
-  :global(.ant-select-selector) {
-    height: 42px !important;
-  }
 }
 
-.Applied { color: #1e40af; :global(.ant-select-selector) { background: #dbeafe !important; } }
-.Screening { color: #155e75; :global(.ant-select-selector) { background: #cffafe !important; } }
-.Assessment { color: #92400e; :global(.ant-select-selector) { background: #fef3c7 !important; } }
-.Interviewing { color: #6b21a8; :global(.ant-select-selector) { background: #f3e8ff !important; } }
-.Offer { color: #166534; :global(.ant-select-selector) { background: #dcfce7 !important; } }
-.Accepted { color: #065f46; :global(.ant-select-selector) { background: #d1fae5 !important; } }
-.Rejected { color: #991b1b; :global(.ant-select-selector) { background: #fee2e2 !important; } }
-.Withdrawn { color: #475569; :global(.ant-select-selector) { background: #e2e8f0 !important; } }
+.Applied { color: #1e40af; background: #dbeafe; }
+.Screening { color: #155e75; background: #cffafe; }
+.Assessment { color: #92400e; background: #fef3c7; }
+.Interviewing { color: #6b21a8; background: #f3e8ff; }
+.Offer { color: #166534; background: #dcfce7; }
+.Accepted { color: #065f46; background: #d1fae5; }
+.Rejected { color: #991b1b; background: #fee2e2; }
+.Withdrawn { color: #475569; background: #e2e8f0; }
 
 .selectedStatus,
 .statusOption {
@@ -87,6 +71,7 @@
 
 .statusChevron {
   display: inline-block;
+  margin-left: auto;
   font-size: 12px;
   transform: translateY(-1px);
 }
@@ -101,25 +86,30 @@
 }
 
 .statusPopup {
-  padding: 8px !important;
-  border: 1px solid #e2e8f0;
-  border-radius: 12px !important;
-  box-shadow: 0 18px 42px rgb(15 23 42 / 16%) !important;
+  width: 190px;
+  max-width: calc(100vw - 24px);
 
-  :global(.ant-select-item-option) {
+  :global(.ant-dropdown-menu) {
+    max-height: 288px;
+    padding: 8px;
+    overflow-y: auto;
+    border: 1px solid #e2e8f0;
+    border-radius: 12px;
+    box-shadow: 0 18px 42px rgb(15 23 42 / 16%);
+  }
+
+  :global(.ant-dropdown-menu-item) {
     min-height: 36px;
     margin: 2px 0;
     padding: 0 !important;
     border-radius: 8px;
   }
 
-  :global(.ant-select-item-option-content) { width: 100%; }
-
-  :global(.ant-select-item-option-active:not(.ant-select-item-option-disabled)) {
+  :global(.ant-dropdown-menu-item:hover) {
     background: #f5f7ff !important;
   }
 
-  :global(.ant-select-item-option-selected:not(.ant-select-item-option-disabled)) {
+  :global(.ant-dropdown-menu-item-selected) {
     color: #312e81;
     background: #eef2ff !important;
     font-weight: 650;
@@ -142,4 +132,15 @@
 
 @keyframes spin {
   to { transform: rotate(360deg); }
+}
+
+@media (max-width: 600px) {
+  .statusSelect {
+    max-width: 100%;
+    font-size: 16px;
+  }
+
+  .statusOption {
+    font-size: 16px;
+  }
 }
