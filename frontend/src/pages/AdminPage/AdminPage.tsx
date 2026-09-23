@@ -11,6 +11,7 @@ import {
 } from '../../api/admin';
 import { useAuth } from '../../auth/useAuth';
 import BrandLogo from '../../components/BrandLogo/BrandLogo';
+import FilterSelect from '../../components/FilterSelect/FilterSelect';
 import styles from './AdminPage.module.scss';
 
 type UserStatusFilter = 'all' | 'active' | 'disabled';
@@ -205,8 +206,18 @@ function AdminPage() {
 
           <form className={styles.filters} onSubmit={submitSearch}>
             <label><span className={styles.visuallyHidden}>Search users</span><input value={searchInput} onChange={event => setSearchInput(event.target.value)} placeholder="Search email or display name" /></label>
-            <button type="submit">Search</button>
-            <label><span className={styles.visuallyHidden}>Account status</span><select value={status} onChange={event => { setStatus(event.target.value as UserStatusFilter); setPage(1); }}><option value="all">All accounts</option><option value="active">Active</option><option value="disabled">Disabled</option></select></label>
+            <button className={styles.searchButton} type="submit">Search</button>
+            <FilterSelect
+              ariaLabel="Filter by account status"
+              className={styles.statusFilter}
+              value={status}
+              options={[
+                { value: 'all', label: 'All accounts' },
+                { value: 'active', label: 'Active accounts', dotColor: '#22a06b' },
+                { value: 'disabled', label: 'Disabled accounts', dotColor: '#e05a38' },
+              ]}
+              onChange={value => { setStatus(value); setPage(1); }}
+            />
           </form>
 
           {usersError && <div className={styles.error} role="alert">{usersError}</div>}

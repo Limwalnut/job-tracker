@@ -7,6 +7,7 @@ $surface: #ffffff;
 
 .page {
   min-height: 100vh;
+  overflow-x: hidden;
   color: $text;
   background: #f4f6fb;
 }
@@ -58,6 +59,8 @@ $surface: #ffffff;
 
 .main {
   width: min(1440px, 100%);
+  min-width: 0;
+  box-sizing: border-box;
   margin: 0 auto;
   padding: 42px clamp(20px, 4vw, 64px) 80px;
 }
@@ -102,6 +105,7 @@ $surface: #ffffff;
 }
 
 .insights {
+  min-width: 0;
   display: grid;
   grid-template-columns: minmax(0, 1.2fr) minmax(320px, 0.8fr);
   gap: 20px;
@@ -126,9 +130,11 @@ $surface: #ffffff;
 }
 
 .trend {
+  width: 100%;
+  min-width: 0;
   height: 210px;
   display: grid;
-  grid-template-columns: repeat(14, 1fr);
+  grid-template-columns: repeat(14, minmax(0, 1fr));
   align-items: end;
   gap: clamp(5px, 1vw, 12px);
   margin-top: 28px;
@@ -136,6 +142,7 @@ $surface: #ffffff;
   border-bottom: 1px solid #dfe4ef;
 
   > div {
+    min-width: 0;
     height: 100%;
     display: grid;
     grid-template-rows: 18px minmax(0, 1fr) 24px;
@@ -144,7 +151,7 @@ $surface: #ffffff;
     gap: 5px;
   }
 
-  small { min-width: 36px; color: #8a94a8; font-size: 0.62rem; text-align: center; white-space: nowrap; }
+  small { width: 100%; min-width: 0; color: #8a94a8; font-size: 0.62rem; text-align: center; white-space: nowrap; }
 }
 
 .bar {
@@ -193,11 +200,8 @@ $surface: #ffffff;
   margin: 22px 0 18px;
 
   label:first-child { width: min(420px, 100%); }
-  label:last-child { margin-left: auto; }
-
   input,
-  select,
-  button {
+  .searchButton {
     min-height: 42px;
     border: 1px solid #cbd5e1;
     border-radius: 8px;
@@ -206,8 +210,12 @@ $surface: #ffffff;
   }
 
   input { width: 100%; padding: 0 13px; }
-  select { padding: 0 34px 0 12px; color: #3f4b61; }
-  button { padding: 0 17px; border-color: $indigo; color: #ffffff; background: $indigo; font-weight: 700; cursor: pointer; }
+  .searchButton { padding: 0 17px; border-color: $indigo; color: #ffffff; background: $indigo; font-weight: 700; cursor: pointer; }
+}
+
+.statusFilter {
+  width: 190px;
+  margin-left: auto;
 }
 
 .tableScroll { overflow-x: auto; }
@@ -405,10 +413,15 @@ $surface: #ffffff;
   .panel,
   .usersPanel,
   .auditPanel { padding: 18px; }
+  .trend {
+    height: 190px;
+    gap: 2px;
+  }
+  .trend small { font-size: 0.56rem; }
+  .bar { width: min(16px, 72%); }
   .filters { align-items: stretch; flex-wrap: wrap; }
   .filters label:first-child { width: calc(100% - 86px); }
-  .filters label:last-child { width: 100%; margin-left: 0; }
-  .filters select { width: 100%; }
+  .statusFilter { width: 100%; margin-left: 0; }
   .pagination { justify-content: space-between; }
   .auditPanel li { grid-template-columns: 30px minmax(0, 1fr); }
   .auditPanel time { grid-column: 2; }

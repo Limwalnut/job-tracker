@@ -140,8 +140,7 @@ $text: #172033;
 }
 
 .logout {
-  grid-column: 1 / -1;
-  padding: 8px 0 0;
+  padding: 0;
   border: 0;
   color: rgb(244 245 255 / 65%);
   background: transparent;
@@ -154,8 +153,6 @@ $text: #172033;
 }
 
 .adminLink {
-  grid-column: 1 / -1;
-  padding-top: 9px;
   color: #b9e3e5;
   font-size: 0.76rem;
   font-weight: 650;
@@ -163,6 +160,15 @@ $text: #172033;
 
   &:hover { color: #ffffff; }
   &:focus-visible { outline: 2px solid #b9e3e5; outline-offset: 3px; }
+}
+
+.accountActions {
+  grid-column: 1 / -1;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding-top: 9px;
 }
 
 .main {
@@ -530,12 +536,17 @@ $text: #172033;
   .accountLink { display: flex; }
 
   .accountDetails { display: none; }
-  .logout { padding: 0; }
+  .accountActions {
+    flex: none;
+    gap: 18px;
+    padding: 0;
+  }
   .main { padding: 28px 20px 48px; }
 }
 
 @media (max-width: 560px) {
-  .account { gap: 12px; }
+  .account { gap: 14px; }
+  .accountActions { gap: 14px; }
   .navItem { gap: 7px; font-size: 0.78rem; }
   .navItem svg { width: 17px; height: 17px; }
   .pageHeader { align-items: flex-start; flex-direction: column; }
