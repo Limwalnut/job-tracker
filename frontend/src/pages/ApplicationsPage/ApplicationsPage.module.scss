@@ -153,6 +153,18 @@ $text: #172033;
   &:hover { color: #fff; }
 }
 
+.adminLink {
+  grid-column: 1 / -1;
+  padding-top: 9px;
+  color: #b9e3e5;
+  font-size: 0.76rem;
+  font-weight: 650;
+  text-decoration: none;
+
+  &:hover { color: #ffffff; }
+  &:focus-visible { outline: 2px solid #b9e3e5; outline-offset: 3px; }
+}
+
 .main {
   width: 100%;
   max-width: 100%;

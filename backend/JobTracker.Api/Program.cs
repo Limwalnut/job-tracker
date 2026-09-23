@@ -60,6 +60,7 @@ builder.Services.AddDataProtection()
 
 builder.Services
     .AddIdentityApiEndpoints<ApplicationUser>()
+    .AddRoles<IdentityRole>()
     .AddEntityFrameworkStores<AppDbContext>();
 
 builder.Services.Configure<DataProtectionTokenProviderOptions>(options =>
@@ -118,7 +119,8 @@ builder.Services.ConfigureApplicationCookie(options =>
     options.SlidingExpiration = true;
 });
 
-builder.Services.AddAuthorization();
+builder.Services.AddAuthorizationBuilder()
+    .AddPolicy("AdminOnly", policy => policy.RequireRole("Admin"));
 builder.Services.AddRateLimiter(options =>
 {
     options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
@@ -156,6 +158,7 @@ app.Use(async (context, next) =>
         path.StartsWithSegments("/forgot-password") ||
         path.StartsWithSegments("/reset-password") ||
         path.StartsWithSegments("/account") ||
+        path.StartsWithSegments("/admin") ||
         path.StartsWithSegments("/applications");
 
     if (shouldPreventIndexing)
@@ -177,6 +180,39 @@ if (!app.Environment.IsDevelopment())
     await dbContext.Database.MigrateAsync();
 }
 
+await using (var scope = app.Services.CreateAsyncScope())
+{
+    app.Logger.LogInformation("Ensuring administrator role configuration.");
+    var roleManager = scope.ServiceProvider.GetRequiredService<RoleManager<IdentityRole>>();
+    if (!await roleManager.RoleExistsAsync("Admin"))
+    {
+        var createRoleResult = await roleManager.CreateAsync(new IdentityRole("Admin"));
+        if (!createRoleResult.Succeeded)
+        {
+            throw new InvalidOperationException(
+                $"Unable to create the Admin role: {string.Join(", ", createRoleResult.Errors.Select(error => error.Description))}");
+        }
+    }
+
+    var bootstrapEmail = builder.Configuration["Admin:BootstrapEmail"]?.Trim();
+    if (!string.IsNullOrEmpty(bootstrapEmail))
+    {
+        var userManager = scope.ServiceProvider.GetRequiredService<UserManager<ApplicationUser>>();
+        var bootstrapUser = await userManager.FindByEmailAsync(bootstrapEmail);
+        if (bootstrapUser is not null && !await userManager.IsInRoleAsync(bootstrapUser, "Admin"))
+        {
+            var addRoleResult = await userManager.AddToRoleAsync(bootstrapUser, "Admin");
+            if (!addRoleResult.Succeeded)
+            {
+                throw new InvalidOperationException(
+                    $"Unable to assign the Admin role: {string.Join(", ", addRoleResult.Errors.Select(error => error.Description))}");
+            }
+        }
+    }
+
+    app.Logger.LogInformation("Administrator role configuration is ready.");
+}
+
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
 {
@@ -195,6 +231,45 @@ if (!app.Environment.IsDevelopment())
 }
 
 app.UseAuthentication();
+
+app.Use(async (context, next) =>
+{
+    if (context.Request.Path.StartsWithSegments("/api") &&
+        context.User.Identity?.IsAuthenticated == true)
+    {
+        var userId = context.User.FindFirstValue(ClaimTypes.NameIdentifier);
+        if (userId is not null)
+        {
+            var dbContext = context.RequestServices.GetRequiredService<AppDbContext>();
+            var accountState = await dbContext.Users
+                .AsNoTracking()
+                .Where(user => user.Id == userId)
+                .Select(user => new { user.DisabledAtUtc, user.LastSeenAtUtc })
+                .SingleOrDefaultAsync();
+
+            if (accountState is null || accountState.DisabledAtUtc is not null)
+            {
+                var signInManager = context.RequestServices
+                    .GetRequiredService<SignInManager<ApplicationUser>>();
+                await signInManager.SignOutAsync();
+                context.Response.StatusCode = StatusCodes.Status401Unauthorized;
+                return;
+            }
+
+            var now = DateTimeOffset.UtcNow;
+            if (accountState.LastSeenAtUtc is null ||
+                accountState.LastSeenAtUtc < now.AddMinutes(-5))
+            {
+                await dbContext.Users
+                    .Where(user => user.Id == userId)
+                    .ExecuteUpdateAsync(setters => setters
+                        .SetProperty(user => user.LastSeenAtUtc, now));
+            }
+        }
+    }
+
+    await next();
+});
 
 app.UseAuthorization();
 var auth = app.MapGroup("/api/auth");
@@ -221,7 +296,8 @@ auth.MapGet("/me", async (
     {
         id = user.Id,
         email = user.Email,
-        displayName = user.DisplayName
+        displayName = user.DisplayName,
+        isAdmin = await userManager.IsInRoleAsync(user, "Admin")
     });
 }).RequireAuthorization();
 

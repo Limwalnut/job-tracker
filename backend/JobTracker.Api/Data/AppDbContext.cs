@@ -22,6 +22,8 @@ public class AppDbContext :
 
     public DbSet<ApplicationStatusHistory> ApplicationStatusHistories { get; set; }
 
+    public DbSet<AdminAuditLog> AdminAuditLogs { get; set; }
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);
@@ -29,6 +31,25 @@ public class AppDbContext :
         modelBuilder.Entity<ApplicationUser>()
             .Property(user => user.DisplayName)
             .HasMaxLength(80);
+
+        modelBuilder.Entity<ApplicationUser>()
+            .Property(user => user.CreatedAtUtc)
+            .HasDefaultValueSql("CURRENT_TIMESTAMP");
+
+        modelBuilder.Entity<ApplicationUser>()
+            .HasIndex(user => user.CreatedAtUtc);
+
+        modelBuilder.Entity<ApplicationUser>()
+            .HasIndex(user => user.LastSeenAtUtc);
+
+        var auditLogEntity = modelBuilder.Entity<AdminAuditLog>();
+
+        auditLogEntity.Property(log => log.AdminUserId).HasMaxLength(450);
+        auditLogEntity.Property(log => log.TargetUserId).HasMaxLength(450);
+        auditLogEntity.Property(log => log.Action).HasMaxLength(100);
+        auditLogEntity.Property(log => log.Detail).HasMaxLength(1000);
+        auditLogEntity.HasIndex(log => log.CreatedAtUtc);
+        auditLogEntity.HasIndex(log => log.TargetUserId);
 
         modelBuilder.Entity<JobApplication>()
             .Property(application => application.Status)

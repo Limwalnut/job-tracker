@@ -262,6 +262,7 @@ function ApplicationsPage() {
               <strong>{user.email}</strong>
             </div>
           </Link>}
+          {user?.isAdmin && <Link className={styles.adminLink} to="/admin">Admin console</Link>}
           <button type="button" className={styles.logout} onClick={handleLogout}>
             Sign out
           </button>

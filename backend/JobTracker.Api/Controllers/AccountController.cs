@@ -102,6 +102,7 @@ public sealed class AccountController(
             user.Id,
             user.Email ?? string.Empty,
             user.DisplayName,
+            await userManager.IsInRoleAsync(user, "Admin"),
             await userManager.HasPasswordAsync(user),
             logins.Any(login => login.LoginProvider == "Google"));
     }

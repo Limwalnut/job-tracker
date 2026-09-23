@@ -4,6 +4,7 @@ export interface CurrentUser {
   id: string;
   email: string;
   displayName: string | null;
+  isAdmin: boolean;
 }
 
 export interface AccountDetails extends CurrentUser {

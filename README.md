@@ -176,8 +176,13 @@ Use environment variables in production. ASP.NET Core maps double underscores to
 | `Email__FromAddress` | For email flows | Verified sender, for example `no-reply@mail.applyline.app` |
 | `Email__FromName` | No | Sender name; defaults to `Applyline` |
 | `Email__FrontendBaseUrl` | For password reset | Public URL used to build reset links |
+| `Admin__BootstrapEmail` | For administration | Existing account email that receives the initial `Admin` role |
 
 Never commit `.env`, production connection strings, OAuth secrets, or Resend API keys.
+
+### Administrator access
+
+Set `Admin__BootstrapEmail` to the email address of an existing Applyline account and redeploy. During startup the application creates the `Admin` role if needed and assigns it to that account. The administrator can then open `/admin`. Remove the environment variable after the role has been assigned if you do not want startup to continue checking it.
 
 ### Google OAuth
 
@@ -252,4 +257,3 @@ docker build -t applyline:local .
 - ASP.NET Core Data Protection keys are stored in PostgreSQL so sessions survive deployments.
 - Private application, account, authentication, and API routes return `noindex, nofollow` headers.
 - User-owned application and event queries are scoped to the authenticated user.
-

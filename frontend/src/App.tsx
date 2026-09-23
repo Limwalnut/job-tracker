@@ -1,3 +1,4 @@
+import { lazy, Suspense } from 'react';
 import { Navigate, Route, Routes } from "react-router";
 import ApplicationsPage from "./pages/ApplicationsPage/ApplicationsPage";
 import HomePage from "./pages/HomePage/HomePage";
@@ -10,6 +11,9 @@ import PageMetadata from "./components/PageMetadata/PageMetadata";
 import ForgotPasswordPage from "./pages/ForgotPasswordPage/ForgotPasswordPage";
 import ResetPasswordPage from "./pages/ResetPasswordPage/ResetPasswordPage";
 import AccountPage from "./pages/AccountPage/AccountPage";
+import RequireAdmin from './auth/RequireAdmin';
+
+const AdminPage = lazy(() => import('./pages/AdminPage/AdminPage'));
 
 const privatePageMetadata = (
   <PageMetadata
@@ -58,6 +62,17 @@ function App() {
         path="/account"
         element={
           <><PageMetadata canonicalPath="/account" description="Manage your Applyline account." noIndex title="Account settings | Applyline" /><RequireAuth><AccountPage /></RequireAuth></>
+        }
+      />
+      <Route
+        path="/admin"
+        element={
+          <>
+            <PageMetadata canonicalPath="/admin" description="Manage Applyline operations." noIndex title="Admin | Applyline" />
+            <RequireAdmin>
+              <Suspense fallback={<p>Loading administration…</p>}><AdminPage /></Suspense>
+            </RequireAdmin>
+          </>
         }
       />
       <Route path="*" element={<Navigate to="/" />} />
