@@ -135,12 +135,10 @@ public sealed class AdminController(
         }
 
         var totalCount = await users.CountAsync();
-        var items = await ProjectUsers(users)
-            .OrderByDescending(user => user.CreatedAtUtc)
-            .ThenBy(user => user.Email)
-            .Skip((page - 1) * pageSize)
-            .Take(pageSize)
-            .ToListAsync();
+        var items = await LoadUserItemsAsync(
+            users,
+            skip: (page - 1) * pageSize,
+            take: pageSize);
 
         return Ok(new AdminUsersResponse(
             items,
@@ -153,8 +151,9 @@ public sealed class AdminController(
     [HttpGet("users/{id}")]
     public async Task<ActionResult<AdminUserDetailResponse>> GetUser(string id)
     {
-        var user = await ProjectUsers(context.Users.AsNoTracking().Where(user => user.Id == id))
-            .SingleOrDefaultAsync();
+        var user = (await LoadUserItemsAsync(
+                context.Users.AsNoTracking().Where(user => user.Id == id)))
+            .SingleOrDefault();
         if (user is null)
         {
             return NotFound();
@@ -225,20 +224,85 @@ public sealed class AdminController(
         return await GetUser(id);
     }
 
-    private IQueryable<AdminUserListItemResponse> ProjectUsers(IQueryable<ApplicationUser> users)
+    private async Task<List<AdminUserListItemResponse>> LoadUserItemsAsync(
+        IQueryable<ApplicationUser> users,
+        int? skip = null,
+        int? take = null)
     {
-        return users.Select(user => new AdminUserListItemResponse(
+        var orderedUsers = users
+            .OrderByDescending(user => user.CreatedAtUtc)
+            .ThenBy(user => user.Email)
+            .AsQueryable();
+        if (skip is not null)
+        {
+            orderedUsers = orderedUsers.Skip(skip.Value);
+        }
+
+        if (take is not null)
+        {
+            orderedUsers = orderedUsers.Take(take.Value);
+        }
+
+        var userRows = await orderedUsers
+            .Select(user => new AdminUserRow(
+                user.Id,
+                user.Email ?? string.Empty,
+                user.DisplayName,
+                user.CreatedAtUtc,
+                user.LastSeenAtUtc,
+                user.DisabledAtUtc,
+                user.PasswordHash != null))
+            .ToListAsync();
+        var userIds = userRows.Select(user => user.Id).ToList();
+        if (userIds.Count == 0)
+        {
+            return [];
+        }
+
+        var googleUserIds = await context.UserLogins
+            .AsNoTracking()
+            .Where(login =>
+                userIds.Contains(login.UserId) &&
+                login.LoginProvider == "Google")
+            .Select(login => login.UserId)
+            .Distinct()
+            .ToHashSetAsync();
+        var applicationCounts = await context.Applications
+            .AsNoTracking()
+            .Where(application => userIds.Contains(application.UserId))
+            .GroupBy(application => application.UserId)
+            .Select(group => new { UserId = group.Key, Count = group.Count() })
+            .ToDictionaryAsync(item => item.UserId, item => item.Count);
+        var eventCounts = await (
+                from applicationEvent in context.ApplicationEvents.AsNoTracking()
+                join application in context.Applications.AsNoTracking()
+                    on applicationEvent.ApplicationId equals application.Id
+                where userIds.Contains(application.UserId)
+                group applicationEvent by application.UserId
+                into eventGroup
+                select new { UserId = eventGroup.Key, Count = eventGroup.Count() })
+            .ToDictionaryAsync(item => item.UserId, item => item.Count);
+
+        return userRows.Select(user => new AdminUserListItemResponse(
             user.Id,
-            user.Email ?? string.Empty,
+            user.Email,
             user.DisplayName,
             user.CreatedAtUtc,
             user.LastSeenAtUtc,
             user.DisabledAtUtc,
-            user.PasswordHash != null,
-            context.UserLogins.Any(login =>
-                login.UserId == user.Id && login.LoginProvider == "Google"),
-            context.Applications.Count(application => application.UserId == user.Id),
-            context.ApplicationEvents.Count(applicationEvent =>
-                applicationEvent.Application.UserId == user.Id)));
+            user.HasPassword,
+            googleUserIds.Contains(user.Id),
+            applicationCounts.GetValueOrDefault(user.Id),
+            eventCounts.GetValueOrDefault(user.Id)))
+            .ToList();
     }
+
+    private sealed record AdminUserRow(
+        string Id,
+        string Email,
+        string? DisplayName,
+        DateTimeOffset CreatedAtUtc,
+        DateTimeOffset? LastSeenAtUtc,
+        DateTimeOffset? DisabledAtUtc,
+        bool HasPassword);
 }
