@@ -1,4 +1,4 @@
-import { useState, type ReactNode } from 'react';
+import { useEffect, useState, type ReactNode } from 'react';
 import { Link, useNavigate, useParams } from 'react-router';
 import ApplicationCreateDialog from '../../components/ApplicationCreateDialog/ApplicationCreateDialog';
 import ApplicationDialog from '../../components/ApplicationDialog/ApplicationDialog';
@@ -10,9 +10,12 @@ import PrimaryActionButton from '../../components/PrimaryActionButton/PrimaryAct
 import { useAuth } from '../../auth/useAuth';
 import BrandLogo from '../../components/BrandLogo/BrandLogo';
 import { useApplications } from '../../hooks/useApplications';
+import { usePagedApplications } from '../../hooks/usePagedApplications';
+import { undoLatestApplicationStatus } from '../../api/applications';
 import { getApplicationEvents } from '../../api/events';
 import type { ApplicationStatus } from '../../types/application';
 import type { EventType, ScheduleOpenRequest } from '../../types/event';
+import { userDisplayName, userInitials } from '../../utils/userPresentation';
 import styles from './ApplicationsPage.module.scss';
 
 type ActiveTab = 'dashboard' | 'applications' | 'calendar';
@@ -22,6 +25,11 @@ interface ScheduleSuggestion {
   applicationId: number;
   type: Extract<EventType, 'Interview' | 'Assessment'>;
   hasExistingEvent: boolean;
+}
+
+interface StatusUndo {
+  applicationId: number;
+  status: ApplicationStatus;
 }
 
 const navigationItems: Array<{ id: ActiveTab; label: string; icon: ReactNode }> = [
@@ -67,6 +75,7 @@ function ApplicationsPage() {
   const { applicationId } = useParams<{ applicationId: string }>();
   const { user, logout } = useAuth();
   const { applications, loading, error, refresh, changeStatus } = useApplications();
+  const pagedApplications = usePagedApplications();
   const [activeTab, setActiveTab] = useState<ActiveTab>('dashboard');
   const [eventRevision, setEventRevision] = useState(0);
   const [selected, setSelected] = useState<{
@@ -79,6 +88,14 @@ function ApplicationsPage() {
   const [statusError, setStatusError] = useState<string | null>(null);
   const [scheduleSuggestion, setScheduleSuggestion] = useState<ScheduleSuggestion | null>(null);
   const [scheduleRequest, setScheduleRequest] = useState<ScheduleOpenRequest | null>(null);
+  const [statusUndo, setStatusUndo] = useState<StatusUndo | null>(null);
+  const [undoingStatus, setUndoingStatus] = useState(false);
+
+  useEffect(() => {
+    if (!statusUndo) return;
+    const timeout = window.setTimeout(() => setStatusUndo(null), 7000);
+    return () => window.clearTimeout(timeout);
+  }, [statusUndo]);
 
   const parsedApplicationId = applicationId ? Number(applicationId) : null;
   const viewingApplicationId = parsedApplicationId !== null
@@ -103,6 +120,7 @@ function ApplicationsPage() {
 
   function refreshAll() {
     refresh();
+    pagedApplications.refresh();
     setEventRevision((value) => value + 1);
   }
 
@@ -131,6 +149,12 @@ function ApplicationsPage() {
 
     try {
       await changeStatus(id, status);
+      pagedApplications.refresh();
+      if (['Accepted', 'Rejected', 'Withdrawn'].includes(status)) {
+        setStatusUndo({ applicationId: id, status });
+      } else {
+        setStatusUndo(null);
+      }
       if (status === 'Assessment' || status === 'Interviewing') {
         await offerSchedule(id, status);
       }
@@ -146,6 +170,24 @@ function ApplicationsPage() {
         next.delete(id);
         return next;
       });
+    }
+  }
+
+  async function undoClosedStatus() {
+    if (!statusUndo || undoingStatus) return;
+    setUndoingStatus(true);
+    setStatusError(null);
+
+    try {
+      await undoLatestApplicationStatus(statusUndo.applicationId);
+      setStatusUndo(null);
+      refreshAll();
+    } catch (undoError) {
+      setStatusError(undoError instanceof Error
+        ? undoError.message
+        : 'Unable to undo the status change.');
+    } finally {
+      setUndoingStatus(false);
     }
   }
 
@@ -213,13 +255,13 @@ function ApplicationsPage() {
         </nav>
 
         <div className={styles.account}>
-          <div className={styles.avatar} aria-hidden="true">
-            {user?.email.charAt(0).toUpperCase()}
-          </div>
-          <div className={styles.accountDetails}>
-            <span>Signed in as</span>
-            <strong>{user?.email}</strong>
-          </div>
+          {user && <Link className={styles.accountLink} to="/account" aria-label="Open account settings">
+            <div className={styles.avatar} aria-hidden="true">{userInitials(user)}</div>
+            <div className={styles.accountDetails}>
+              <span>{userDisplayName(user)}</span>
+              <strong>{user.email}</strong>
+            </div>
+          </Link>}
           <button type="button" className={styles.logout} onClick={handleLogout}>
             Sign out
           </button>
@@ -345,15 +387,30 @@ function ApplicationsPage() {
           <section className={styles.tabPanel} aria-label="Applications">
             {viewingApplicationId === null && (
               <ApplicationList
-                applications={applications}
-                loading={loading}
-                error={error}
+                applications={pagedApplications.applications}
+                loading={pagedApplications.loading}
+                error={pagedApplications.error}
                 statusError={statusError}
                 updatingStatusIds={updatingStatusIds}
-                onChanged={refresh}
+                scope={pagedApplications.scope}
+                counts={pagedApplications.counts}
+                status={pagedApplications.status}
+                sort={pagedApplications.sort}
+                search={pagedApplications.searchInput}
+                page={pagedApplications.page}
+                pageSize={pagedApplications.pageSize}
+                totalCount={pagedApplications.totalCount}
+                totalPages={pagedApplications.totalPages}
+                onChanged={pagedApplications.refresh}
                 onAdd={() => setAddingApplication(true)}
                 onOpen={openApplication}
                 onStatusChange={handleStatusChange}
+                onScopeChange={pagedApplications.setScope}
+                onStatusFilterChange={pagedApplications.setStatus}
+                onSortChange={pagedApplications.setSort}
+                onSearchChange={pagedApplications.setSearchInput}
+                onPageChange={pagedApplications.setPage}
+                onClearFilters={pagedApplications.clearFilters}
               />
             )}
             {viewingApplicationId !== null && loading && (
@@ -405,6 +462,7 @@ function ApplicationsPage() {
           onSaved={() => {
             setAddingApplication(false);
             refresh();
+            pagedApplications.refresh();
           }}
         />
       )}
@@ -448,6 +506,15 @@ function ApplicationsPage() {
             </button>
             <button type="button" className={styles.schedulePromptDismiss} onClick={() => setScheduleSuggestion(null)}>Not now</button>
           </div>
+        </aside>
+      )}
+      {statusUndo && (
+        <aside className={styles.statusUndo} role="status" aria-live="polite">
+          <span>Moved to Closed as <strong>{statusUndo.status}</strong>.</span>
+          <button type="button" disabled={undoingStatus} onClick={() => void undoClosedStatus()}>
+            {undoingStatus ? 'Undoing…' : 'Undo'}
+          </button>
+          <button type="button" className={styles.statusUndoDismiss} aria-label="Dismiss" onClick={() => setStatusUndo(null)}>×</button>
         </aside>
       )}
     </div>

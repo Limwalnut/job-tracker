@@ -1,0 +1,136 @@
+.trigger {
+  width: 100%;
+  min-height: 44px;
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 0 11px 0 13px;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  color: #263044;
+  background: #fff;
+  font: inherit;
+  font-size: 16px;
+  font-weight: 400;
+  line-height: 1.25;
+  text-align: left;
+  cursor: pointer;
+  transition: border-color 150ms ease, box-shadow 150ms ease, background-color 150ms ease;
+
+  &:hover {
+    border-color: #9aa7ba;
+    background: #fbfcff;
+  }
+
+  &:focus-visible {
+    border-color: #6366f1;
+    outline: none;
+    box-shadow: 0 0 0 3px rgb(99 102 241 / 12%);
+  }
+}
+
+.icon {
+  width: 17px;
+  height: 17px;
+  display: grid;
+  flex: 0 0 auto;
+  place-items: center;
+  color: #8994a8;
+  pointer-events: none;
+
+  svg {
+    width: 17px;
+    height: 17px;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 1.8;
+    stroke-linecap: round;
+  }
+}
+
+.value,
+.option {
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.value {
+  flex: 1;
+
+  span:last-child {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+}
+
+.chevron {
+  width: 12px;
+  height: 8px;
+  flex: 0 0 auto;
+  margin-left: 5px;
+  fill: none;
+  stroke: #60708a;
+  stroke-width: 1.5;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  pointer-events: none;
+}
+
+.dot {
+  width: 7px;
+  height: 7px;
+  flex: 0 0 auto;
+  border-radius: 50%;
+}
+
+.popup {
+  min-width: 184px;
+  max-width: calc(100vw - 24px);
+
+  :global(.ant-dropdown-menu) {
+    padding: 8px;
+    border: 1px solid #e2e8f0;
+    border-radius: 12px;
+    box-shadow: 0 18px 42px rgb(15 23 42 / 16%);
+  }
+
+  :global(.ant-dropdown-menu-item) {
+    min-height: 36px;
+    margin: 2px 0;
+    padding: 0 !important;
+    border-radius: 8px;
+    font-weight: 400;
+  }
+
+  :global(.ant-dropdown-menu-item:hover) {
+    background: #f5f7ff !important;
+  }
+
+  :global(.ant-dropdown-menu-item-selected) {
+    color: #312e81;
+    background: #eef2ff !important;
+    font-weight: 400;
+  }
+}
+
+.option {
+  width: 100%;
+  min-height: 36px;
+  padding: 7px 10px;
+  color: #334155;
+  font-size: 14px;
+}
+
+.check {
+  margin-left: auto;
+  color: #4f46e5;
+  font-size: 13px;
+}
+
+@media (max-width: 600px) {
+  .trigger,
+  .option { font-size: 16px; }
+}

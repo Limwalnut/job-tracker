@@ -41,6 +41,134 @@ public class ApplicationsController : ControllerBase
         return Ok(applications);
     }
 
+    [HttpGet("paged")]
+    public async Task<ActionResult<PagedApplicationsResponse>> GetPagedApplications(
+        [FromQuery] int page = 1,
+        [FromQuery] int pageSize = 20,
+        [FromQuery] string scope = "active",
+        [FromQuery] ApplicationStatus? status = null,
+        [FromQuery] string? search = null,
+        [FromQuery] string sort = "newest")
+    {
+        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        if (userId is null) return Unauthorized();
+
+        if (page < 1)
+        {
+            ModelState.AddModelError(nameof(page), "Page must be at least 1.");
+        }
+
+        if (pageSize is < 1 or > 100)
+        {
+            ModelState.AddModelError(nameof(pageSize), "Page size must be between 1 and 100.");
+        }
+
+        var normalizedScope = scope.Trim().ToLowerInvariant();
+        if (normalizedScope is not ("active" or "closed" or "all"))
+        {
+            ModelState.AddModelError(nameof(scope), "Scope must be active, closed, or all.");
+        }
+
+        var normalizedSort = sort.Trim().ToLowerInvariant();
+        if (normalizedSort is not ("newest" or "oldest" or "company"))
+        {
+            ModelState.AddModelError(nameof(sort), "Sort must be newest, oldest, or company.");
+        }
+
+        if (!ModelState.IsValid) return ValidationProblem(ModelState);
+
+        var closedStatuses = new[]
+        {
+            ApplicationStatus.Accepted,
+            ApplicationStatus.Rejected,
+            ApplicationStatus.Withdrawn
+        };
+
+        var userApplications = _context.Applications
+            .AsNoTracking()
+            .Where(application => application.UserId == userId);
+
+        var allCount = await userApplications.CountAsync();
+        var closedCount = await userApplications.CountAsync(application =>
+            closedStatuses.Contains(application.Status));
+        var activeCount = allCount - closedCount;
+        var groupedStatusCounts = await userApplications
+            .GroupBy(application => application.Status)
+            .Select(group => new { Status = group.Key, Count = group.Count() })
+            .ToListAsync();
+        var statusCounts = Enum.GetValues<ApplicationStatus>()
+            .ToDictionary(
+                applicationStatus => applicationStatus,
+                applicationStatus => groupedStatusCounts
+                    .FirstOrDefault(item => item.Status == applicationStatus)?.Count ?? 0);
+
+        IQueryable<JobApplication> filtered = userApplications;
+        if (normalizedScope == "active")
+        {
+            filtered = filtered.Where(application =>
+                !closedStatuses.Contains(application.Status));
+        }
+        else if (normalizedScope == "closed")
+        {
+            filtered = filtered.Where(application =>
+                closedStatuses.Contains(application.Status));
+        }
+
+        if (status is not null)
+        {
+            filtered = filtered.Where(application => application.Status == status.Value);
+        }
+
+        var normalizedSearch = search?.Trim();
+        if (!string.IsNullOrEmpty(normalizedSearch))
+        {
+            var escapedSearch = normalizedSearch
+                .Replace("\\", "\\\\")
+                .Replace("%", "\\%")
+                .Replace("_", "\\_");
+            var pattern = $"%{escapedSearch}%";
+            filtered = filtered.Where(application =>
+                EF.Functions.ILike(application.CompanyName, pattern, "\\") ||
+                EF.Functions.ILike(application.JobTitle, pattern, "\\"));
+        }
+
+        var totalCount = await filtered.CountAsync();
+        var totalPages = totalCount == 0
+            ? 1
+            : (int)Math.Ceiling(totalCount / (double)pageSize);
+        var normalizedPage = Math.Min(page, totalPages);
+
+        var ordered = normalizedSort switch
+        {
+            "oldest" => filtered
+                .OrderBy(application => application.AppliedDate)
+                .ThenBy(application => application.Id),
+            "company" => filtered
+                .OrderBy(application => application.CompanyName)
+                .ThenBy(application => application.JobTitle)
+                .ThenByDescending(application => application.Id),
+            _ => filtered
+                .OrderByDescending(application => application.AppliedDate)
+                .ThenByDescending(application => application.Id)
+        };
+
+        var items = await ordered
+            .Skip((normalizedPage - 1) * pageSize)
+            .Take(pageSize)
+            .ToListAsync();
+
+        return Ok(new PagedApplicationsResponse(
+            items,
+            normalizedPage,
+            pageSize,
+            totalCount,
+            totalPages,
+            activeCount,
+            closedCount,
+            allCount,
+            statusCounts));
+    }
+
     [HttpGet("{id:int}")]
     public async Task<ActionResult<JobApplication>> GetApplication(int id)
     {

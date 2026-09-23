@@ -31,9 +31,9 @@ export default function ForgotPasswordPage() {
         <BrandLogo tone="light" />
       </Link>
 
-      <section className={styles.card} aria-labelledby="forgot-password-title">
+      <section className={`${styles.card} ${styles.recoveryCard}`} aria-labelledby="forgot-password-title">
         <p className={styles.eyebrow}>Account recovery</p>
-        <h1 id="forgot-password-title">Reset your password</h1>
+        <h1 className={styles.recoveryTitle} id="forgot-password-title">Reset your password</h1>
         <p className={styles.introduction}>
           Enter your email and we will send you a secure password reset link.
         </p>

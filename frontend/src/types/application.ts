@@ -8,6 +8,9 @@ export type ApplicationStatus =
   | "Rejected"
   | "Withdrawn";
 
+export type ApplicationScope = 'active' | 'closed' | 'all';
+export type ApplicationSort = 'newest' | 'oldest' | 'company';
+
 export interface JobApplication {
   id: number;
   companyName: string;
@@ -20,6 +23,18 @@ export interface JobApplication {
   contactEmail: string | null;
   jobDescription: string | null;
   notes: string | null;
+}
+
+export interface PagedApplicationsResponse {
+  items: JobApplication[];
+  page: number;
+  pageSize: number;
+  totalCount: number;
+  totalPages: number;
+  activeCount: number;
+  closedCount: number;
+  allCount: number;
+  statusCounts: Record<ApplicationStatus, number>;
 }
 
 export type ApplicationStatusChangeSource = 'System' | 'Manual' | 'Event' | 'Imported';

@@ -9,6 +9,7 @@ import TermsPage from "./pages/TermsPage/TermsPage";
 import PageMetadata from "./components/PageMetadata/PageMetadata";
 import ForgotPasswordPage from "./pages/ForgotPasswordPage/ForgotPasswordPage";
 import ResetPasswordPage from "./pages/ResetPasswordPage/ResetPasswordPage";
+import AccountPage from "./pages/AccountPage/AccountPage";
 
 const privatePageMetadata = (
   <PageMetadata
@@ -51,6 +52,12 @@ function App() {
         path="/applications/:applicationId"
         element={
           <>{privatePageMetadata}<RequireAuth><ApplicationsPage /></RequireAuth></>
+        }
+      />
+      <Route
+        path="/account"
+        element={
+          <><PageMetadata canonicalPath="/account" description="Manage your Applyline account." noIndex title="Account settings | Applyline" /><RequireAuth><AccountPage /></RequireAuth></>
         }
       />
       <Route path="*" element={<Navigate to="/" />} />

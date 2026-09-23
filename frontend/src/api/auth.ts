@@ -3,6 +3,12 @@ import { requestJson, requestVoid } from './client';
 export interface CurrentUser {
   id: string;
   email: string;
+  displayName: string | null;
+}
+
+export interface AccountDetails extends CurrentUser {
+  hasPassword: boolean;
+  googleConnected: boolean;
 }
 
 export function register(email: string, password: string) {
@@ -29,6 +35,24 @@ export function login(
 
 export function getCurrentUser() {
   return requestJson<CurrentUser>('/auth/me');
+}
+
+export function getAccount() {
+  return requestJson<AccountDetails>('/account');
+}
+
+export function updateProfile(displayName: string) {
+  return requestJson<AccountDetails>('/account/profile', {
+    method: 'PATCH',
+    body: JSON.stringify({ displayName }),
+  });
+}
+
+export function updatePassword(currentPassword: string | null, newPassword: string) {
+  return requestJson<AccountDetails>('/account/password', {
+    method: 'POST',
+    body: JSON.stringify({ currentPassword, newPassword }),
+  });
 }
 
 export function logout() {

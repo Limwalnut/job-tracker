@@ -37,6 +37,18 @@ $error: #a22835;
   }
 }
 
+.recoveryCard {
+  width: min(100%, 540px);
+}
+
+.card .recoveryTitle {
+  max-width: 15ch;
+  margin-bottom: 24px;
+  font-size: clamp(2.35rem, 5vw, 3.35rem);
+  line-height: 1.04;
+  text-wrap: balance;
+}
+
 .eyebrow {
   width: fit-content;
   margin: 0 0 18px;
@@ -281,5 +293,11 @@ $error: #a22835;
 
   .card {
     padding: 30px 24px;
+  }
+
+  .card .recoveryTitle {
+    max-width: 14ch;
+    margin-bottom: 20px;
+    font-size: clamp(2.15rem, 11vw, 3rem);
   }
 }

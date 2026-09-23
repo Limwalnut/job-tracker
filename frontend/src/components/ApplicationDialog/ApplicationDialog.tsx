@@ -4,6 +4,8 @@ import { useEffect, useRef, useState } from 'react';
 import { getApplication, deleteApplication } from '../../api/applications';
 import type { JobApplication } from '../../types/application';
 import ApplicationForm from '../ApplicationForm/ApplicationForm';
+import useAnimatedDismiss from '../../hooks/useAnimatedDismiss';
+import { isDialogBackdropPointer } from '../../utils/dialog';
 import styles from './ApplicationDialog.module.scss';
 
 interface Props {
@@ -18,6 +20,7 @@ export default function ApplicationDialog({ id, mode, onClose, onChanged }: Prop
   const [application, setApplication] = useState<JobApplication | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const { closing, dismiss } = useAnimatedDismiss(onClose);
 
   useEffect(() => {
     const element = dialog.current;
@@ -33,7 +36,11 @@ export default function ApplicationDialog({ id, mode, onClose, onChanged }: Prop
 
   function saved() {
     onChanged();
-    onClose();
+    dismiss();
+  }
+
+  function requestClose() {
+    if (!busy && !closing) dismiss();
   }
 
   async function remove() {
@@ -51,16 +58,17 @@ export default function ApplicationDialog({ id, mode, onClose, onChanged }: Prop
   }
 
   return (
-    <dialog ref={dialog} className={styles.dialog} aria-labelledby="dialog-title"
-      onCancel={event => { event.preventDefault(); if (!busy) onClose(); }}>
+    <dialog ref={dialog} className={styles.dialog} data-closing={closing} aria-labelledby="dialog-title"
+      onPointerDown={event => { if (isDialogBackdropPointer(event)) requestClose(); }}
+      onCancel={event => { event.preventDefault(); requestClose(); }}>
       <div className={styles.heading}>
         <h2 id="dialog-title">{mode === 'delete' ? 'Delete Application' : mode === 'edit' ? 'Update Application' : 'Application Details'}</h2>
-        <button type="button" onClick={onClose} disabled={busy} aria-label="Close dialog">Close</button>
+        <button type="button" onClick={requestClose} disabled={busy || closing} aria-label="Close dialog">Close</button>
       </div>
       {error && <p role="alert">{error}</p>}
       {!application && !error && <p role="status">Loading application...</p>}
       {application && mode === 'edit' && (
-        <ApplicationForm application={application} disabled={busy} onCreated={saved} onBusyChange={setBusy} />
+        <ApplicationForm application={application} disabled={busy || closing} onCreated={saved} onBusyChange={setBusy} />
       )}
       {application && mode === 'view' && (
         <dl className={styles.details}>
@@ -80,7 +88,7 @@ export default function ApplicationDialog({ id, mode, onClose, onChanged }: Prop
         <p>Delete the application for <strong>{application.jobTitle}</strong> at <strong>{application.companyName}</strong>?</p>
         <p>All associated events will also be deleted. This action cannot be undone.</p>
         <div className={styles.actions}>
-          <button type="button" disabled={busy} onClick={onClose}>Cancel</button>
+          <button type="button" disabled={busy || closing} onClick={requestClose}>Cancel</button>
           <button className={styles.danger} type="button" disabled={busy} onClick={() => void remove()}>
             {busy ? 'Deleting...' : 'Delete Application'}
           </button>

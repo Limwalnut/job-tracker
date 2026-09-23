@@ -4,6 +4,7 @@ import { getEvents } from '../../api/events';
 import type { ApplicationEvent, EventType } from '../../types/event';
 import styles from './EventBoard.module.scss';
 import { eventDescriptor } from '../../utils/eventPresentation';
+import FilterSelect from '../FilterSelect/FilterSelect';
 
 interface Props {
   revision: number;
@@ -68,12 +69,19 @@ export default function EventBoard({ revision, onAddEvent, onSelect }: Props) {
         <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="6" /><path d="m16 16 4 4" /></svg>
         <input aria-label="Search events" placeholder="Search company, role, or event" value={search} onChange={e => setSearch(e.target.value)} />
       </label>
-      <label className={styles.typeFilter}>
-        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6h16M7 12h10m-7 6h4" /></svg>
-        <select aria-label="Event type" value={type} onChange={e => setType(e.target.value as EventType | '')}>
-          <option value="">All event types</option><option>Interview</option><option>Assessment</option><option value="FollowUp">Follow-up</option>
-        </select>
-      </label>
+      <FilterSelect
+        ariaLabel="Event type"
+        value={type}
+        className={styles.typeFilter}
+        icon={<svg viewBox="0 0 24 24"><path d="M4 6h16M7 12h10m-7 6h4" /></svg>}
+        options={[
+          { value: '', label: 'All event types' },
+          { value: 'Interview', label: 'Interview', dotColor: '#a855f7' },
+          { value: 'Assessment', label: 'Assessment', dotColor: '#f59e0b' },
+          { value: 'FollowUp', label: 'Follow-up', dotColor: '#3b82f6' },
+        ]}
+        onChange={value => setType(value as EventType | '')}
+      />
     </div>
     {loading ? <p role="status">Loading events...</p> : result?.error ? <p role="alert">{result.error} <button type="button" onClick={() => setRetry(x => x + 1)}>Retry</button></p> : <>
       <div className={styles.scroll} tabIndex={0} role="region" aria-label="Monthly schedule">

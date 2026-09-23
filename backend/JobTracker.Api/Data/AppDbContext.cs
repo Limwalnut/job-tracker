@@ -26,6 +26,10 @@ public class AppDbContext :
     {
         base.OnModelCreating(modelBuilder);
 
+        modelBuilder.Entity<ApplicationUser>()
+            .Property(user => user.DisplayName)
+            .HasMaxLength(80);
+
         modelBuilder.Entity<JobApplication>()
             .Property(application => application.Status)
             .HasConversion<string>();

@@ -49,9 +49,9 @@ export default function ResetPasswordPage() {
         <BrandLogo tone="light" />
       </Link>
 
-      <section className={styles.card} aria-labelledby="reset-password-title">
+      <section className={`${styles.card} ${styles.recoveryCard}`} aria-labelledby="reset-password-title">
         <p className={styles.eyebrow}>Account recovery</p>
-        <h1 id="reset-password-title">Choose a new password</h1>
+        <h1 className={styles.recoveryTitle} id="reset-password-title">Choose a new password</h1>
 
         {!hasValidLink ? (
           <>

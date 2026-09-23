@@ -7,10 +7,45 @@
   border-radius: 16px;
   color: #1f2937;
   box-shadow: 0 24px 80px #0f172a40;
-  &::backdrop { background: #0f172a88; }
+  transform-origin: 50% 38%;
+  &[open] { animation: details-dialog-enter 220ms cubic-bezier(.2, .8, .2, 1); }
+  &::backdrop { background: #0f172a88; animation: details-backdrop-enter 180ms ease-out; }
+  &[data-closing='true'] {
+    animation: details-dialog-exit 180ms ease-in forwards;
+
+    &::backdrop { animation: details-backdrop-exit 180ms ease-in forwards; }
+  }
   button { padding: 10px 14px; border: 1px solid #cbd5e1; border-radius: 6px; cursor: pointer; }
   button:disabled { opacity: .6; cursor: wait; }
   [role='alert'] { color: #b91c1c; }
+}
+
+@keyframes details-dialog-enter {
+  from { opacity: 0; transform: translateY(14px) scale(.985); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+@keyframes details-dialog-exit {
+  from { opacity: 1; transform: translateY(0) scale(1); }
+  to { opacity: 0; transform: translateY(8px) scale(.99); }
+}
+
+@keyframes details-backdrop-enter {
+  from { background: #0f172a00; }
+  to { background: #0f172a88; }
+}
+
+@keyframes details-backdrop-exit {
+  from { background: #0f172a88; }
+  to { background: #0f172a00; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .dialog,
+  .dialog[open],
+  .dialog[data-closing='true'],
+  .dialog::backdrop,
+  .dialog[data-closing='true']::backdrop { animation: none; }
 }
 .heading { display: flex; justify-content: space-between; align-items: center; gap: 16px; margin-bottom: 24px; h2 { margin: 0; } }
 .details { dt { color: #64748b; font-size: 13px; margin-top: 20px; } dd { margin: 6px 0; white-space: pre-wrap; overflow-wrap: anywhere; } }

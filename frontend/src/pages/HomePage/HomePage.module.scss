@@ -17,6 +17,8 @@ $page-accent: #b9e3e5;
 }
 
 .header {
+  position: relative;
+  z-index: 100;
   height: 72px;
 
   .shell {
@@ -51,12 +53,89 @@ $page-accent: #b9e3e5;
 }
 
 .accountActions {
+  position: relative;
+  z-index: 1;
   display: flex;
   min-width: max-content;
   justify-content: flex-end;
   align-items: center;
   gap: 32px;
   animation: riseReveal 720ms cubic-bezier(0.22, 1, 0.36, 1) 220ms both;
+}
+
+.accountMenu {
+  position: relative;
+
+  summary {
+    width: 38px;
+    height: 38px;
+    display: grid;
+    place-items: center;
+    border: 1px solid rgba(241, 243, 234, .5);
+    border-radius: 50%;
+    color: $page-background;
+    background: $page-accent;
+    font-size: .75rem;
+    font-weight: 750;
+    list-style: none;
+    cursor: pointer;
+    transition: transform 160ms ease, background-color 160ms ease;
+
+    &::-webkit-details-marker { display: none; }
+    &:hover { background: #d8f1f2; transform: translateY(-1px); }
+    &:focus-visible { outline: 2px solid $page-accent; outline-offset: 3px; }
+  }
+}
+
+.accountMenuPanel {
+  position: absolute;
+  top: calc(100% + 12px);
+  right: 0;
+  z-index: 20;
+  width: 240px;
+  display: grid;
+  padding: 10px;
+  border: 1px solid rgba(218, 224, 239, .9);
+  border-radius: 10px;
+  color: #172033;
+  background: rgba(255, 255, 255, .98);
+  box-shadow: 0 18px 50px rgba(5, 11, 57, .24);
+  transform-origin: top right;
+  animation: account-menu-enter 180ms cubic-bezier(.2, .8, .2, 1) both;
+
+  > div { display: grid; gap: 3px; padding: 10px 11px 13px; border-bottom: 1px solid #e8ebf2; }
+  strong { overflow: hidden; font-size: .84rem; text-overflow: ellipsis; white-space: nowrap; }
+  small { overflow: hidden; color: #707a91; font-size: .7rem; text-overflow: ellipsis; white-space: nowrap; }
+
+  a,
+  button {
+    padding: 10px 11px;
+    border: 0;
+    border-radius: 6px;
+    color: inherit;
+    background: transparent;
+    font: inherit;
+    font-size: .78rem;
+    text-align: left;
+    text-decoration: none;
+    cursor: pointer;
+
+    &:hover { color: #29219e; background: #f1f2fb; }
+  }
+}
+
+.accountMenu[data-closing='true'] .accountMenuPanel {
+  animation: account-menu-exit 150ms ease-in both;
+}
+
+@keyframes account-menu-enter {
+  from { opacity: 0; transform: translateY(-6px) scale(.98); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+@keyframes account-menu-exit {
+  from { opacity: 1; transform: translateY(0) scale(1); }
+  to { opacity: 0; transform: translateY(-4px) scale(.985); }
 }
 
 .signInLink,
@@ -312,6 +391,12 @@ $page-accent: #b9e3e5;
   .actionArrow { min-width: 28px; padding-left: 15px; }
 }
 
+@media (max-width: 480px) {
+  .accountActions[data-authenticated='true'] .startLink {
+    display: none;
+  }
+}
+
 @media (min-width: 601px) and (max-width: 900px) {
   .heroTitle {
     font-size: clamp(3.2rem, 7.2vw, 4rem);
@@ -352,7 +437,10 @@ $page-accent: #b9e3e5;
   .startLink,
   .compactArrow,
   .heroAction,
-  .actionArrow {
+  .actionArrow,
+  .accountMenuPanel,
+  .accountMenu[data-closing='true'] .accountMenuPanel {
+    animation: none;
     transition: none;
   }
 }

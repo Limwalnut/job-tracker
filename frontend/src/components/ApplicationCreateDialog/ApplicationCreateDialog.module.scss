@@ -18,6 +18,11 @@
     background: #0f172a88;
     animation: application-backdrop-enter 180ms ease-out;
   }
+  &[data-closing='true'] {
+    animation: application-dialog-exit 180ms ease-in forwards;
+
+    &::backdrop { animation: application-backdrop-exit 180ms ease-in forwards; }
+  }
   button { cursor: pointer; }
   button:disabled { opacity: .6; cursor: wait; }
 }
@@ -32,9 +37,22 @@
   to { background: #0f172a88; }
 }
 
+@keyframes application-dialog-exit {
+  from { opacity: 1; transform: translateY(0) scale(1); }
+  to { opacity: 0; transform: translateY(8px) scale(.99); }
+}
+
+@keyframes application-backdrop-exit {
+  from { background: #0f172a88; }
+  to { background: #0f172a00; }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .dialog,
-  .dialog::backdrop { animation: none; }
+  .dialog[open],
+  .dialog[data-closing='true'],
+  .dialog::backdrop,
+  .dialog[data-closing='true']::backdrop { animation: none; }
 }
 
 .heading {

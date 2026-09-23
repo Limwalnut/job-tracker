@@ -155,6 +155,7 @@ app.Use(async (context, next) =>
         path.StartsWithSegments("/register") ||
         path.StartsWithSegments("/forgot-password") ||
         path.StartsWithSegments("/reset-password") ||
+        path.StartsWithSegments("/account") ||
         path.StartsWithSegments("/applications");
 
     if (shouldPreventIndexing)
@@ -205,12 +206,22 @@ auth.MapGoogleAuthentication(
     googleAuthenticationEnabled,
     builder.Configuration["Authentication:FrontendBaseUrl"]);
 
-auth.MapGet("/me", (ClaimsPrincipal principal) =>
+auth.MapGet("/me", async (
+    ClaimsPrincipal principal,
+    UserManager<ApplicationUser> userManager) =>
 {
+    var userId = principal.FindFirstValue(ClaimTypes.NameIdentifier);
+    var user = userId is null ? null : await userManager.FindByIdAsync(userId);
+    if (user is null)
+    {
+        return Results.Unauthorized();
+    }
+
     return Results.Ok(new
     {
-        id = principal.FindFirstValue(ClaimTypes.NameIdentifier),
-        email = principal.FindFirstValue(ClaimTypes.Email)
+        id = user.Id,
+        email = user.Email,
+        displayName = user.DisplayName
     });
 }).RequireAuthorization();
 

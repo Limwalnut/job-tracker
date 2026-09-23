@@ -1,5 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import ApplicationForm from '../ApplicationForm/ApplicationForm';
+import useAnimatedDismiss from '../../hooks/useAnimatedDismiss';
+import { isDialogBackdropPointer } from '../../utils/dialog';
 import styles from './ApplicationCreateDialog.module.scss';
 
 interface Props {
@@ -10,6 +12,7 @@ interface Props {
 export default function ApplicationCreateDialog({ onClose, onSaved }: Props) {
   const dialog = useRef<HTMLDialogElement>(null);
   const [busy, setBusy] = useState(false);
+  const { closing, dismiss } = useAnimatedDismiss(onClose);
 
   useEffect(() => {
     const element = dialog.current;
@@ -27,15 +30,20 @@ export default function ApplicationCreateDialog({ onClose, onSaved }: Props) {
     };
   }, []);
 
-  return <dialog ref={dialog} className={styles.dialog} aria-labelledby="application-create-title"
-    onCancel={event => { event.preventDefault(); if (!busy) onClose(); }}>
+  function requestClose() {
+    if (!busy && !closing) dismiss();
+  }
+
+  return <dialog ref={dialog} className={styles.dialog} data-closing={closing} aria-labelledby="application-create-title"
+    onPointerDown={event => { if (isDialogBackdropPointer(event)) requestClose(); }}
+    onCancel={event => { event.preventDefault(); requestClose(); }}>
     <div className={styles.heading}>
       <div>
         <h2 id="application-create-title">Add Application</h2>
         <p>Record a new job application and track its progress.</p>
       </div>
-      <button type="button" onClick={onClose} disabled={busy} aria-label="Close dialog">Close</button>
+      <button type="button" onClick={requestClose} disabled={busy || closing} aria-label="Close dialog">Close</button>
     </div>
-    <ApplicationForm hideHeading onCreated={onSaved} onCancel={onClose} onBusyChange={setBusy} />
+    <ApplicationForm hideHeading disabled={closing} onCreated={() => dismiss(onSaved)} onCancel={requestClose} onBusyChange={setBusy} />
   </dialog>;
 }

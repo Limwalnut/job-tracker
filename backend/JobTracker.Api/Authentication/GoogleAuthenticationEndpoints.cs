@@ -89,11 +89,15 @@ public static class GoogleAuthenticationEndpoints
             var user = await userManager.FindByEmailAsync(email);
             if (user is null)
             {
+                var displayName = loginInfo.Principal.FindFirstValue(ClaimTypes.Name)?.Trim();
                 user = new ApplicationUser
                 {
                     UserName = email,
                     Email = email,
-                    EmailConfirmed = true
+                    EmailConfirmed = true,
+                    DisplayName = string.IsNullOrEmpty(displayName)
+                        ? null
+                        : displayName[..Math.Min(displayName.Length, 80)]
                 };
 
                 var createResult = await userManager.CreateAsync(user);
