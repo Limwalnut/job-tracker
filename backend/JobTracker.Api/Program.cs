@@ -229,7 +229,10 @@ if (app.Environment.IsDevelopment())
 
 if (!app.Environment.IsDevelopment())
 {
-    app.UseDefaultFiles();
+    app.UseDefaultFiles(new DefaultFilesOptions
+    {
+        RedirectToAppendTrailingSlash = false
+    });
     app.UseStaticFiles();
 }
 
