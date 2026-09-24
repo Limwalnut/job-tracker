@@ -323,6 +323,25 @@ app.MapGet("/health", () => Results.Ok(new
 
 if (!app.Environment.IsDevelopment())
 {
+    // Serve the prerendered public pages directly. The SPA fallback otherwise
+    // handles directory-style routes before DefaultFiles can resolve index.html.
+    foreach (var publicPath in new[]
+    {
+        "/privacy",
+        "/terms",
+        "/guide/job-application-tracking"
+    })
+    {
+        var pagePath = publicPath;
+        var htmlPath = Path.Combine(
+            app.Environment.WebRootPath,
+            pagePath.TrimStart('/').Replace('/', Path.DirectorySeparatorChar),
+            "index.html");
+
+        app.MapGet(pagePath, () => Results.File(htmlPath, "text/html"));
+        app.MapGet($"{pagePath}/", () => Results.File(htmlPath, "text/html"));
+    }
+
     app.MapFallbackToFile("spa-shell.html");
 }
 
