@@ -15,10 +15,10 @@ export default function SiteFooter() {
 
         <nav aria-label="Footer navigation">
           <div>
-            <span>Product</span>
+            <span>Explore</span>
             <a href="/#how-it-works">How it works</a>
             <a href="/#why-applyline">Why Applyline</a>
-            <Link to="/guide/job-application-tracking">Job application guide</Link>
+            <Link to="/guide/job-application-tracking">Guide</Link>
           </div>
           <div>
             <span>Company</span>

@@ -65,9 +65,9 @@ function HomePage() {
           </Link>
 
           <nav className={styles.navigation} aria-label="Main navigation">
-            <a href="#product">Product</a>
             <a href="#how-it-works">How it works</a>
             <a href="#why-applyline">Why Applyline</a>
+            <Link to="/guide/job-application-tracking">Guide</Link>
           </nav>
 
           <div className={styles.accountActions} data-authenticated={Boolean(user)}>
