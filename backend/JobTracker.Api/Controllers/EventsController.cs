@@ -127,6 +127,7 @@ public class EventsController : ControllerBase
             return ValidationProblem(ModelState);
         }
 
+        var previousStartsAt = applicationEvent.StartsAt;
         applicationEvent.Title = request.Title.Trim();
         applicationEvent.Type = request.Type!.Value;
         applicationEvent.Status = request.Status!.Value;
@@ -145,6 +146,11 @@ public class EventsController : ControllerBase
         applicationEvent.TimeZone = request.TimeZone.Trim();
         applicationEvent.LocationOrLink = request.LocationOrLink?.Trim();
         applicationEvent.Notes = request.Notes?.Trim();
+
+        if (applicationEvent.StartsAt != previousStartsAt)
+        {
+            applicationEvent.ReminderSentAtUtc = null;
+        }
 
         await _context.SaveChangesAsync();
 

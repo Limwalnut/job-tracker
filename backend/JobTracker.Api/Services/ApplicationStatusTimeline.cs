@@ -30,7 +30,11 @@ public static class ApplicationStatusTimeline
         ApplicationStatusChangeSource source,
         ApplicationEvent? applicationEvent = null)
     {
-        if (application.Status == nextStatus)
+        // Event-backed transitions also represent individual pipeline stages.
+        // Recording them when the broad status is unchanged lets Interview 2
+        // return to Interview 1 (and Assessment 2 to Assessment 1) without
+        // introducing a separate status value for every round.
+        if (application.Status == nextStatus && applicationEvent is null)
         {
             return false;
         }

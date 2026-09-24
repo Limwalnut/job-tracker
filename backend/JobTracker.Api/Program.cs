@@ -70,6 +70,8 @@ builder.Services.Configure<DataProtectionTokenProviderOptions>(options =>
 
 builder.Services.Configure<EmailOptions>(
     builder.Configuration.GetSection(EmailOptions.SectionName));
+builder.Services.Configure<ScheduleReminderOptions>(
+    builder.Configuration.GetSection(ScheduleReminderOptions.SectionName));
 builder.Services.AddHttpClient<ResendEmailSender>(client =>
 {
     client.BaseAddress = new Uri("https://api.resend.com/");
@@ -77,6 +79,7 @@ builder.Services.AddHttpClient<ResendEmailSender>(client =>
 });
 builder.Services.AddTransient<IEmailSender<ApplicationUser>>(services =>
     services.GetRequiredService<ResendEmailSender>());
+builder.Services.AddHostedService<ScheduleReminderWorker>();
 
 var googleClientId = builder.Configuration["Authentication:Google:ClientId"];
 var googleClientSecret = builder.Configuration["Authentication:Google:ClientSecret"];

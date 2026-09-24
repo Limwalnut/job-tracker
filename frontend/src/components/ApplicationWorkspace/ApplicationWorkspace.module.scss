@@ -167,6 +167,8 @@
 
 .contentTabs {
   display: inline-flex;
+  max-width: 100%;
+  overflow-x: auto;
   gap: 4px;
   margin-bottom: 20px;
   padding: 4px;

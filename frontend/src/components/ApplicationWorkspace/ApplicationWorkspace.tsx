@@ -1,6 +1,7 @@
 import { useState, type FormEvent } from 'react';
 import { updateApplication } from '../../api/applications';
 import ApplicationForm from '../ApplicationForm/ApplicationForm';
+import ApplicationChecklist from '../ApplicationChecklist/ApplicationChecklist';
 import ApplicationSchedule from '../ApplicationSchedule/ApplicationSchedule';
 import ApplicationTimeline from '../ApplicationTimeline/ApplicationTimeline';
 import StatusBadge from '../StatusBadge/StatusBadge';
@@ -23,7 +24,7 @@ interface Props {
 export default function ApplicationWorkspace({ applications, selectedId, onBack, onDelete, onChanged, onStatusChanged, scheduleRequest }: Props) {
   const application = applications.find(item => item.id === selectedId);
   const [isEditing, setIsEditing] = useState(false);
-  const [detailTab, setDetailTab] = useState<'jobDescription' | 'notes' | 'schedule'>(
+  const [detailTab, setDetailTab] = useState<'jobDescription' | 'notes' | 'checklist' | 'schedule'>(
     scheduleRequest?.applicationId === selectedId ? 'schedule' : 'jobDescription',
   );
   const [editingSection, setEditingSection] = useState<'jobDescription' | 'notes' | null>(null);
@@ -177,6 +178,16 @@ export default function ApplicationWorkspace({ applications, selectedId, onBack,
                   Notes
                 </button>
                 <button
+                  id="application-checklist-tab"
+                  type="button"
+                  role="tab"
+                  aria-selected={detailTab === 'checklist'}
+                  aria-controls="application-checklist-panel"
+                  onClick={() => setDetailTab('checklist')}
+                >
+                  Checklist
+                </button>
+                <button
                   id="application-schedule-tab"
                   type="button"
                   role="tab"
@@ -213,6 +224,16 @@ export default function ApplicationWorkspace({ applications, selectedId, onBack,
                     description="Add the role description to keep the opportunity details in one place."
                   />}
                 </section>
+              </div>
+
+              <div
+                id="application-checklist-panel"
+                className={styles.tabPanel}
+                role="tabpanel"
+                aria-labelledby="application-checklist-tab"
+                hidden={detailTab !== 'checklist'}
+              >
+                <ApplicationChecklist application={application} />
               </div>
 
               <div

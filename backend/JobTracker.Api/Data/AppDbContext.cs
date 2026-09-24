@@ -22,6 +22,8 @@ public class AppDbContext :
 
     public DbSet<ApplicationStatusHistory> ApplicationStatusHistories { get; set; }
 
+    public DbSet<ApplicationChecklistItem> ApplicationChecklistItems { get; set; }
+
     public DbSet<AdminAuditLog> AdminAuditLogs { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
@@ -118,6 +120,24 @@ public class AppDbContext :
         eventEntity.HasIndex(applicationEvent => applicationEvent.ApplicationId);
 
         eventEntity.HasIndex(applicationEvent => applicationEvent.StartsAt);
+
+        eventEntity.HasIndex(applicationEvent => new
+        {
+            applicationEvent.Status,
+            applicationEvent.ReminderSentAtUtc,
+            applicationEvent.StartsAt
+        });
+
+        var checklistItemEntity = modelBuilder.Entity<ApplicationChecklistItem>();
+
+        checklistItemEntity.Property(item => item.Title).HasMaxLength(200);
+        checklistItemEntity.Property(item => item.Stage).HasMaxLength(100);
+        checklistItemEntity.HasOne(item => item.Application)
+            .WithMany()
+            .HasForeignKey(item => item.ApplicationId)
+            .OnDelete(DeleteBehavior.Cascade);
+        checklistItemEntity.HasIndex(item => item.ApplicationId);
+        checklistItemEntity.HasIndex(item => new { item.ApplicationId, item.IsCompleted, item.DueDate });
 
         var statusHistoryEntity = modelBuilder.Entity<ApplicationStatusHistory>();
 

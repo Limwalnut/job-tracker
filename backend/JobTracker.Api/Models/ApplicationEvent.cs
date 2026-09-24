@@ -33,6 +33,8 @@ public class ApplicationEvent
 
     public string? Notes { get; set; }
 
+    public DateTimeOffset? ReminderSentAtUtc { get; set; }
+
     public ICollection<ApplicationStatusHistory> StatusChanges { get; set; }
         = new List<ApplicationStatusHistory>();
 }

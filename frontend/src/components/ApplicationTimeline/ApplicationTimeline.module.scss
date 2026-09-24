@@ -48,6 +48,10 @@
     background: rgb(255 255 255 / 78%);
   }
 
+  &[data-reverted='true'] {
+    opacity: .58;
+  }
+
 }
 
 .date {
@@ -133,58 +137,24 @@
   }
 }
 
-.interviewRounds {
-  display: grid;
-  gap: 7px;
-  margin: 10px 0 0;
-  padding: 0;
-  list-style: none;
+.stageBadge {
+  display: inline-block;
+  padding: 4px 10px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 1.5;
+  white-space: nowrap;
 
-  li {
-    display: grid;
-    grid-template-columns: 24px minmax(0, 1fr);
-    align-items: center;
-    gap: 8px;
-    padding: 7px 8px;
-    border: 1px solid #e1e4f5;
-    border-radius: 8px;
-    background: rgb(255 255 255 / 72%);
-
-    > span {
-      width: 24px;
-      height: 24px;
-      display: grid;
-      place-items: center;
-      border-radius: 50%;
-      color: #6b21a8;
-      background: #f3e8ff;
-      font-size: 10px;
-      font-weight: 800;
-    }
-
-    div { min-width: 0; }
-    strong {
-      display: block;
-      overflow: hidden;
-      color: #334155;
-      font-size: 11px;
-      text-overflow: ellipsis;
-      white-space: nowrap;
-    }
-
-    small { margin-top: 2px; }
-
-    &[data-result='Passed'] > span { color: #166534; background: #dcfce7; }
-    &[data-result='Failed'] > span { color: #991b1b; background: #fee2e2; }
+  &.Assessment {
+    color: #92400e;
+    background: #fef3c7;
   }
-}
 
-.unlinkedInterviews {
-  margin-top: 18px;
-  padding-top: 16px;
-  border-top: 1px solid #e3e7f1;
-
-  > strong { color: #334155; font-size: 12px; }
+  &.Interviewing {
+    color: #6b21a8;
+    background: #f3e8ff;
+  }
 }
 
 .undoButton {

@@ -23,6 +23,16 @@ const timeFormatter = new Intl.DateTimeFormat('en-AU', {
   hour: '2-digit', minute: '2-digit',
 });
 
+type TimelineStage = {
+  id: string;
+  occurredAt: string;
+  status: ApplicationStatus;
+  label: string;
+  history?: ApplicationStatusHistory;
+  event?: ApplicationEvent;
+  isReverted: boolean;
+};
+
 function describeChange(entry: ApplicationStatusHistory) {
   if (!entry.fromStatus) return 'Application added';
   if (entry.toStatus === 'Rejected') return 'Application marked as rejected';
@@ -67,27 +77,79 @@ export default function ApplicationTimeline({ application, refreshToken = 0, onC
   }, [application.id, requestKey, localRevision]);
 
   const loading = result?.key !== requestKey;
-  const entries = loading ? [] : result.entries.filter(entry => !entry.isReverted);
-  const interviewEvents = loading ? [] : result.events.filter(event => event.type === 'Interview');
-  const interviewEntryId = [...entries].reverse().find(entry => entry.toStatus === 'Interviewing')?.id;
+  const allEntries = loading ? [] : result.entries;
+  const entries = allEntries.filter(entry => !entry.isReverted);
+  const stageEvents = (loading ? [] : result.events)
+    .filter(event => event.type === 'Interview' || event.type === 'Assessment')
+    .sort((left, right) => left.startsAt.localeCompare(right.startsAt) || left.id - right.id);
   const error = loading ? null : result.error;
 
-  const interviewRounds = interviewEvents.length > 0 && <ul className={styles.interviewRounds}>
-    {interviewEvents.map(event => {
-      const occurredAt = new Date(event.startsAt);
-      const result = event.interviewOutcome && event.interviewOutcome !== 'Pending'
-        ? event.interviewOutcome
-        : event.status;
+  const eventHistory = new Map<number, ApplicationStatusHistory>();
+  allEntries.forEach(entry => {
+    if (entry.applicationEventId !== null) eventHistory.set(entry.applicationEventId, entry);
+  });
 
-      return <li key={event.id} data-result={result}>
-        <span>{event.interviewRound ?? '—'}</span>
-        <div>
-          <strong>{event.interviewStage || event.title}</strong>
-          <small>{dateFormatter.format(occurredAt)} · {result}</small>
-        </div>
-      </li>;
-    })}
-  </ul>;
+  const interviewNumbers = new Map(
+    stageEvents
+      .filter(event => event.type === 'Interview')
+      .map((event, index) => [event.id, index + 1]),
+  );
+  const assessmentNumbers = new Map(
+    stageEvents
+      .filter(event => event.type === 'Assessment')
+      .map((event, index) => [event.id, index + 1]),
+  );
+  const eventStages: TimelineStage[] = stageEvents.map(event => {
+    const history = eventHistory.get(event.id);
+    const status: ApplicationStatus = event.type === 'Interview' ? 'Interviewing' : 'Assessment';
+    const label = event.type === 'Interview'
+      ? `Interview ${event.interviewRound ?? interviewNumbers.get(event.id)}`
+      : `Assessment ${assessmentNumbers.get(event.id)}`;
+
+    return {
+      id: `event-${event.id}`,
+      occurredAt: event.startsAt,
+      status,
+      label,
+      history,
+      event,
+      isReverted: history?.isReverted ?? false,
+    };
+  });
+
+  const eventStatuses = new Set(eventStages.map(stage => stage.status));
+  const statusStages: TimelineStage[] = entries
+    .filter(entry => !eventStatuses.has(entry.toStatus) || !['Assessment', 'Interviewing'].includes(entry.toStatus))
+    .map(entry => ({
+      id: `status-${entry.id}`,
+      occurredAt: entry.changedAt,
+      status: entry.toStatus,
+      label: entry.toStatus === 'Assessment'
+        ? 'Assessment 1'
+        : entry.toStatus === 'Interviewing'
+          ? 'Interview 1'
+          : entry.toStatus,
+      history: entry,
+      isReverted: false,
+    }));
+
+  const stages = [...statusStages, ...eventStages].sort((left, right) =>
+    left.occurredAt.localeCompare(right.occurredAt) || left.id.localeCompare(right.id));
+  const currentEventStage = [...eventStages]
+    .reverse()
+    .find(stage => !stage.isReverted && stage.status === application.status);
+  const currentStatusStage = [...statusStages]
+    .reverse()
+    .find(stage => stage.status === application.status);
+  const currentStage = currentEventStage ?? currentStatusStage;
+  const undoEntry = [...entries].reverse().find(entry => entry.canUndo);
+  const currentStageIndex = currentStage ? stages.findIndex(stage => stage.id === currentStage.id) : -1;
+  const returnTarget = undoEntry?.fromStatus
+    ? [...stages.slice(0, Math.max(0, currentStageIndex))]
+        .reverse()
+        .find(stage => !stage.isReverted && stage.status === undoEntry.fromStatus)
+    : undefined;
+  const returnLabel = returnTarget?.label ?? undoEntry?.fromStatus;
 
   async function undo(entry: ApplicationStatusHistory) {
     if (undoing !== null) return;
@@ -114,39 +176,53 @@ export default function ApplicationTimeline({ application, refreshToken = 0, onC
     {actionError && <p className={styles.actionError} role="alert">{actionError}</p>}
     {loading ? <div className={styles.loading} role="status"><span /><span /><span /></div>
       : error ? <p className={styles.message} role="alert">{error}</p>
-      : entries.length === 0 ? <p className={styles.message}>No status changes recorded yet.</p>
-      : <ol className={styles.timeline}>{entries.map(entry => {
-        const occurredAt = new Date(entry.changedAt);
-        const isCurrent = entry.toStatus === application.status && entry.canUndo;
+      : stages.length === 0 ? <p className={styles.message}>No status changes recorded yet.</p>
+      : <ol className={styles.timeline}>{stages.map(stage => {
+        const occurredAt = new Date(stage.occurredAt);
+        const isCurrent = stage.id === currentStage?.id;
+        const eventResult = stage.event?.type === 'Interview'
+          ? stage.event.interviewOutcome && stage.event.interviewOutcome !== 'Pending'
+            ? stage.event.interviewOutcome
+            : stage.event.status
+          : stage.event?.status;
 
-        return <li className={styles.timelineItem} data-current={isCurrent} key={entry.id}>
-          <time dateTime={entry.changedAt} className={styles.date}>
+        return <li className={styles.timelineItem} data-current={isCurrent} data-reverted={stage.isReverted} key={stage.id}>
+          <time dateTime={stage.occurredAt} className={styles.date}>
             {dateFormatter.format(occurredAt)}
-            {entry.fromStatus && <span>{timeFormatter.format(occurredAt)}</span>}
+            {stage.event
+              ? <span>{stage.event.isAllDay ? 'All day' : timeFormatter.format(occurredAt)}</span>
+              : stage.history?.fromStatus && <span>{timeFormatter.format(occurredAt)}</span>}
           </time>
           <div className={styles.rail} aria-hidden="true">
-            <span className={`${styles.node} ${styles[entry.toStatus]}`} />
+            <span className={`${styles.node} ${styles[stage.status]}`} />
           </div>
           <div className={styles.entryContent}>
-            <StatusBadge status={entry.toStatus} />
-            <p>{isCurrent ? 'Current stage' : describeChange(entry)}</p>
-            {isCurrent && entry.fromStatus && <small>{describeChange(entry)}</small>}
-            {entry.id === interviewEntryId && interviewRounds}
-            {entry.canUndo && (confirmingUndo === entry.id
+            {stage.event || stage.label !== stage.status
+              ? <span className={`${styles.stageBadge} ${styles[stage.status]}`}>{stage.label}</span>
+              : <StatusBadge status={stage.status} />}
+            <p>{isCurrent
+              ? 'Current stage'
+              : stage.isReverted
+                ? 'Returned from this stage'
+                : stage.history
+                  ? describeChange(stage.history)
+                  : 'Scheduled stage'}</p>
+            {stage.event && <small>{[
+              stage.event.type === 'Interview' ? stage.event.interviewStage : stage.event.title,
+              eventResult,
+            ].filter(Boolean).join(' · ')}</small>}
+            {isCurrent && !stage.event && stage.history?.fromStatus && <small>{describeChange(stage.history)}</small>}
+            {isCurrent && undoEntry && returnLabel && (confirmingUndo === undoEntry.id
               ? <div className={styles.undoConfirmation}>
-                  <span>Return the application to {entry.fromStatus}? Interview rounds will stay in Schedule.</span>
-                  <button type="button" disabled={undoing !== null} onClick={() => void undo(entry)}>
-                    {undoing === entry.id ? 'Returning…' : 'Return status'}
+                  <span>Return the application to {returnLabel}? Scheduled events will stay in Schedule.</span>
+                  <button type="button" disabled={undoing !== null} onClick={() => void undo(undoEntry)}>
+                    {undoing === undoEntry.id ? 'Returning…' : 'Return stage'}
                   </button>
                   <button type="button" disabled={undoing !== null} onClick={() => setConfirmingUndo(null)}>Cancel</button>
                 </div>
-              : <button className={styles.undoButton} type="button" onClick={() => setConfirmingUndo(entry.id)}>Return to {entry.fromStatus}</button>)}
+              : <button className={styles.undoButton} type="button" onClick={() => setConfirmingUndo(undoEntry.id)}>Return to {returnLabel}</button>)}
           </div>
         </li>;
       })}</ol>}
-    {!loading && !error && interviewRounds && !interviewEntryId && <div className={styles.unlinkedInterviews}>
-      <strong>Interview rounds</strong>
-      {interviewRounds}
-    </div>}
   </section>;
 }
