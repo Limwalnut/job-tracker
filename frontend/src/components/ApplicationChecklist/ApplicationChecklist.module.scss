@@ -34,7 +34,7 @@
 
 .editor {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(150px, .45fr) minmax(150px, .4fr);
+  grid-template-columns: minmax(0, 1fr) minmax(170px, .4fr);
   gap: 14px;
   margin: 18px 0 22px;
   padding: 18px;
@@ -86,18 +86,9 @@
   button:disabled { opacity: .55; cursor: wait; }
 }
 
-.group { margin-top: 22px; }
-.group h4 {
-  margin: 0 0 9px;
-  color: #475569;
-  font-size: 12px;
-  font-weight: 750;
-  letter-spacing: .04em;
-  text-transform: uppercase;
-}
-
-.group ul,
+.activeList,
 .completed ul { display: grid; gap: 8px; margin: 0; padding: 0; list-style: none; }
+.activeList { margin-top: 22px; }
 
 .item {
   position: relative;
@@ -191,7 +182,7 @@
 
 @media (max-width: 720px) {
   .editor { grid-template-columns: 1fr; }
-  .titleField, .stageField, .formActions { grid-column: auto; }
+  .titleField, .formActions { grid-column: auto; }
   .item { grid-template-columns: 24px minmax(0, 1fr); }
   .itemActions { grid-column: 2; }
   .deleteConfirmation { grid-column: 1 / -1; flex-wrap: wrap; justify-content: flex-start; }

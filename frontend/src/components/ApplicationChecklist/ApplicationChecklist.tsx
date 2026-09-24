@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState, type FormEvent } from 'react';
+import { useEffect, useState, type FormEvent } from 'react';
 import {
   createChecklistItem,
   deleteChecklistItem,
@@ -7,7 +7,6 @@ import {
 } from '../../api/checklist';
 import type { JobApplication } from '../../types/application';
 import type { ChecklistItem, ChecklistItemRequest } from '../../types/checklist';
-import ChecklistStageSelect from '../ChecklistStageSelect/ChecklistStageSelect';
 import WorkspaceActionButton from '../WorkspaceActionButton/WorkspaceActionButton';
 import WorkspaceEmptyState from '../WorkspaceEmptyState/WorkspaceEmptyState';
 import styles from './ApplicationChecklist.module.scss';
@@ -16,7 +15,7 @@ interface Props {
   application: JobApplication;
 }
 
-const emptyDraft: ChecklistItemRequest = { title: '', stage: 'General', dueDate: null };
+const emptyDraft: ChecklistItemRequest = { title: '', dueDate: null };
 
 function formatDueDate(value: string) {
   return new Intl.DateTimeFormat('en-AU', { day: 'numeric', month: 'short', year: 'numeric' })
@@ -59,11 +58,6 @@ export default function ApplicationChecklist({ application }: Props) {
 
   const incompleteItems = items.filter(item => !item.isCompleted);
   const completedItems = items.filter(item => item.isCompleted);
-  const groupedItems = useMemo(() => {
-    const groups = new Map<string, ChecklistItem[]>();
-    incompleteItems.forEach(item => groups.set(item.stage, [...(groups.get(item.stage) ?? []), item]));
-    return [...groups.entries()];
-  }, [incompleteItems]);
   const percentage = items.length === 0 ? 0 : Math.round((completedItems.length / items.length) * 100);
 
   function beginCreate() {
@@ -75,7 +69,7 @@ export default function ApplicationChecklist({ application }: Props) {
 
   function beginEdit(item: ChecklistItem) {
     setEditing(item);
-    setDraft({ title: item.title, stage: item.stage, dueDate: item.dueDate });
+    setDraft({ title: item.title, dueDate: item.dueDate });
     setShowEditor(true);
     setDeletingId(null);
     setError(null);
@@ -89,7 +83,7 @@ export default function ApplicationChecklist({ application }: Props) {
 
   async function save(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    const request = { ...draft, title: draft.title.trim(), stage: draft.stage.trim() || 'General' };
+    const request = { ...draft, title: draft.title.trim() };
     if (!request.title || busyId) return;
     setBusyId('form');
     setError(null);
@@ -115,7 +109,6 @@ export default function ApplicationChecklist({ application }: Props) {
     try {
       await updateChecklistItem(item.id, {
         title: item.title,
-        stage: item.stage,
         dueDate: item.dueDate,
         isCompleted: !item.isCompleted,
       });
@@ -159,12 +152,11 @@ export default function ApplicationChecklist({ application }: Props) {
       </button>
       <div className={styles.itemContent}>
         <strong>{item.title}</strong>
-        <div className={styles.itemMeta}>
-          <span>{item.stage}</span>
-          {item.dueDate && <time dateTime={item.dueDate} data-overdue={overdue || undefined}>
+        {item.dueDate && <div className={styles.itemMeta}>
+          <time dateTime={item.dueDate} data-overdue={overdue || undefined}>
             {overdue ? 'Overdue · ' : 'Due '}{formatDueDate(item.dueDate)}
-          </time>}
-        </div>
+          </time>
+        </div>}
       </div>
       <div className={styles.itemActions}>
         <button type="button" aria-label={`Edit ${item.title}`} disabled={busyId !== null} onClick={() => beginEdit(item)}>
@@ -202,11 +194,6 @@ export default function ApplicationChecklist({ application }: Props) {
         <input autoFocus value={draft.title} maxLength={200} disabled={busyId !== null}
           placeholder="What needs to be done?" onChange={event => setDraft(current => ({ ...current, title: event.target.value }))} />
       </label>
-      <label className={styles.stageField}>
-        <span>Stage</span>
-        <ChecklistStageSelect value={draft.stage} disabled={busyId !== null}
-          onChange={stage => setDraft(current => ({ ...current, stage }))} />
-      </label>
       <label>
         <span>Due date <small>Optional</small></span>
         <input type="date" value={draft.dueDate ?? ''} disabled={busyId !== null}
@@ -226,10 +213,9 @@ export default function ApplicationChecklist({ application }: Props) {
       description="Add the next action you want to complete for this application."
     />}
 
-    {!loading && groupedItems.map(([stage, stageItems]) => <section className={styles.group} key={stage}>
-      <h4>{stage}</h4>
-      <ul>{stageItems.map(item => renderItem(item))}</ul>
-    </section>)}
+    {!loading && incompleteItems.length > 0 && <ul className={styles.activeList}>
+      {incompleteItems.map(item => renderItem(item))}
+    </ul>}
 
     {completedItems.length > 0 && <details className={styles.completed}>
       <summary>Completed <span>{completedItems.length}</span></summary>

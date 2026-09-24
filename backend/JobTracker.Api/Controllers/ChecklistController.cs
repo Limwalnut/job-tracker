@@ -23,14 +23,11 @@ public sealed class ChecklistController(AppDbContext context) : ControllerBase
         if (item is null) return NotFound();
 
         var title = request.Title.Trim();
-        var stage = request.Stage.Trim();
         if (title.Length == 0) ModelState.AddModelError(nameof(request.Title), "Enter a checklist item.");
-        if (stage.Length == 0) ModelState.AddModelError(nameof(request.Stage), "Enter a stage.");
         if (!ModelState.IsValid) return ValidationProblem(ModelState);
 
         var now = DateTimeOffset.UtcNow;
         item.Title = title;
-        item.Stage = stage;
         item.DueDate = request.DueDate;
         if (item.IsCompleted != request.IsCompleted)
         {

@@ -131,7 +131,6 @@ public class AppDbContext :
         var checklistItemEntity = modelBuilder.Entity<ApplicationChecklistItem>();
 
         checklistItemEntity.Property(item => item.Title).HasMaxLength(200);
-        checklistItemEntity.Property(item => item.Stage).HasMaxLength(100);
         checklistItemEntity.HasOne(item => item.Application)
             .WithMany()
             .HasForeignKey(item => item.ApplicationId)

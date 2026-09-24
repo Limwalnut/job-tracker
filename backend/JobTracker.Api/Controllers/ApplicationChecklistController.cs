@@ -47,9 +47,7 @@ public sealed class ApplicationChecklistController(AppDbContext context) : Contr
         if (!applicationExists) return NotFound();
 
         var title = request.Title.Trim();
-        var stage = request.Stage.Trim();
         if (title.Length == 0) ModelState.AddModelError(nameof(request.Title), "Enter a checklist item.");
-        if (stage.Length == 0) ModelState.AddModelError(nameof(request.Stage), "Enter a stage.");
         if (!ModelState.IsValid) return ValidationProblem(ModelState);
 
         var now = DateTimeOffset.UtcNow;
@@ -57,7 +55,6 @@ public sealed class ApplicationChecklistController(AppDbContext context) : Contr
         {
             ApplicationId = applicationId,
             Title = title,
-            Stage = stage,
             DueDate = request.DueDate,
             CreatedAtUtc = now,
             UpdatedAtUtc = now

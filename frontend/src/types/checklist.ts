@@ -2,7 +2,6 @@ export interface ChecklistItem {
   id: number;
   applicationId: number;
   title: string;
-  stage: string;
   dueDate: string | null;
   isCompleted: boolean;
   completedAtUtc: string | null;
@@ -12,6 +11,5 @@ export interface ChecklistItem {
 
 export interface ChecklistItemRequest {
   title: string;
-  stage: string;
   dueDate: string | null;
 }
