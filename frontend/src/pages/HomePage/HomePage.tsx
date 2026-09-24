@@ -55,7 +55,7 @@ function HomePage() {
     <div className={styles.page}>
       <PageMetadata
         canonicalPath="/"
-        description="Applyline keeps job applications, interviews and every next step moving in one clear direction."
+        description="Applyline is a job application tracker for organizing roles, application stages, interview schedules, notes and follow-ups in one place."
         title="Applyline — Job Application Tracker"
       />
       <header className={styles.header}>
@@ -110,19 +110,23 @@ function HomePage() {
       <main>
         <section className={styles.hero}>
           <div className={styles.heroContent}>
-            <p className={styles.eyebrow}>Your search, in motion</p>
+            <p className={styles.eyebrow}>A clearer way to manage your job search</p>
 
             <h1 className={styles.heroTitle}>
               <span className={styles.titleLine}>
-                <span className={styles.titleText}>Keep Every</span>
+                <span className={styles.titleText}>Job Application</span>
               </span>
               <span className={styles.titleLine}>
-                <span className={styles.titleText}>Opportunity Moving.</span>
+                <span className={styles.titleText}>Tracker</span>
               </span>
             </h1>
 
             <p className={styles.heroDescription}>
-              Track applications, interviews and every next step—all moving in one clear direction.
+              Keep each role, status, interview, contact and follow-up together. Applyline helps you see where every application stands and what needs your attention next.
+            </p>
+
+            <p className={styles.audienceNote}>
+              For anyone managing multiple applications—from a first job search to a career change.
             </p>
 
             <Link className={styles.heroAction} to={primaryDestination}>

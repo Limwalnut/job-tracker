@@ -323,7 +323,7 @@ app.MapGet("/health", () => Results.Ok(new
 
 if (!app.Environment.IsDevelopment())
 {
-    app.MapFallbackToFile("index.html");
+    app.MapFallbackToFile("spa-shell.html");
 }
 
 app.Run();

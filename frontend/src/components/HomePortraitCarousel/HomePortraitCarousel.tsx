@@ -348,11 +348,8 @@ function HomePortraitCarousel() {
                     <img
                       src={portrait.image}
                       alt={isClone ? '' : portrait.role}
-                      loading={
-                        groupIndex === 1 && portraitIndex < 5
-                          ? 'eager'
-                          : 'lazy'
-                      }
+                      loading={groupIndex === 1 && portraitIndex === 0 ? 'eager' : 'lazy'}
+                      fetchPriority={groupIndex === 1 && portraitIndex === 0 ? 'high' : undefined}
                     />
                     {portraitCard(portrait.id)}
                   </article>

@@ -16,8 +16,9 @@ export default function SiteFooter() {
         <nav aria-label="Footer navigation">
           <div>
             <span>Product</span>
-            <a href="#how-it-works">How it works</a>
-            <a href="#why-applyline">Why Applyline</a>
+            <a href="/#how-it-works">How it works</a>
+            <a href="/#why-applyline">Why Applyline</a>
+            <Link to="/guide/job-application-tracking">Job application guide</Link>
           </div>
           <div>
             <span>Company</span>
