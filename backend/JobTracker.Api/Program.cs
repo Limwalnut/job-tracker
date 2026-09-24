@@ -339,7 +339,6 @@ if (!app.Environment.IsDevelopment())
             "index.html");
 
         app.MapGet(pagePath, () => Results.File(htmlPath, "text/html"));
-        app.MapGet($"{pagePath}/", () => Results.File(htmlPath, "text/html"));
     }
 
     app.MapFallbackToFile("spa-shell.html");

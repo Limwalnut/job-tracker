@@ -110,23 +110,19 @@ function HomePage() {
       <main>
         <section className={styles.hero}>
           <div className={styles.heroContent}>
-            <p className={styles.eyebrow}>A clearer way to manage your job search</p>
+            <p className={styles.eyebrow}>Your search, in motion</p>
 
             <h1 className={styles.heroTitle}>
               <span className={styles.titleLine}>
-                <span className={styles.titleText}>Job Application</span>
+                <span className={styles.titleText}>Keep Every</span>
               </span>
               <span className={styles.titleLine}>
-                <span className={styles.titleText}>Tracker</span>
+                <span className={styles.titleText}>Opportunity Moving.</span>
               </span>
             </h1>
 
             <p className={styles.heroDescription}>
-              Keep each role, status, interview, contact and follow-up together. Applyline helps you see where every application stands and what needs your attention next.
-            </p>
-
-            <p className={styles.audienceNote}>
-              For anyone managing multiple applications—from a first job search to a career change.
+              Track job applications, interviews and next steps—all in one clear direction.
             </p>
 
             <Link className={styles.heroAction} to={primaryDestination}>
