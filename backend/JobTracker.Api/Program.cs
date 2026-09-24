@@ -327,6 +327,7 @@ if (!app.Environment.IsDevelopment())
     // handles directory-style routes before DefaultFiles can resolve index.html.
     foreach (var publicPath in new[]
     {
+        "/",
         "/privacy",
         "/terms",
         "/guide/job-application-tracking"
