@@ -117,6 +117,9 @@ function ApplicationsPage() {
     !['Rejected', 'Withdrawn', 'Accepted'].includes(application.status),
   ).length;
   const largestStatusCount = Math.max(1, ...Object.values(statusCounts));
+  const recentApplications = applications
+    .filter((application) => application.status !== 'Rejected')
+    .slice(0, 5);
 
   function refreshAll() {
     refresh();
@@ -360,9 +363,11 @@ function ApplicationsPage() {
                       Add application
                     </button>
                   </div>
+                ) : recentApplications.length === 0 ? (
+                  <p className={styles.panelMessage}>No applications to show here yet.</p>
                 ) : (
                   <div className={styles.recentList}>
-                    {applications.slice(0, 5).map((application) => (
+                    {recentApplications.map((application) => (
                       <button
                         type="button"
                         className={styles.recentItem}
