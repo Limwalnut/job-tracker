@@ -1,4 +1,4 @@
-import { useRef, useState, type FormEvent } from 'react';
+import { useLayoutEffect, useRef, useState, type FormEvent } from 'react';
 import { updateApplication } from '../../api/applications';
 import ApplicationForm from '../ApplicationForm/ApplicationForm';
 import ApplicationChecklist from '../ApplicationChecklist/ApplicationChecklist';
@@ -21,20 +21,35 @@ interface Props {
   scheduleRequest?: ScheduleOpenRequest | null;
 }
 
+type DetailTab = 'jobDescription' | 'notes' | 'checklist' | 'schedule';
+
 export default function ApplicationWorkspace({ applications, selectedId, onBack, onDelete, onChanged, onStatusChanged, scheduleRequest }: Props) {
   const application = applications.find(item => item.id === selectedId);
   const [isEditing, setIsEditing] = useState(false);
-  const tabPanelsRef = useRef<HTMLDivElement>(null);
-  const [tabPanelMinHeight, setTabPanelMinHeight] = useState<{ applicationId: number; height: number } | null>(null);
-  const [detailTab, setDetailTab] = useState<'jobDescription' | 'notes' | 'checklist' | 'schedule'>(
+  const [detailTab, setDetailTab] = useState<DetailTab>(
     scheduleRequest?.applicationId === selectedId ? 'schedule' : 'jobDescription',
   );
+  const pendingTabScrollRef = useRef<{ applicationId: number; tab: DetailTab; scrollY: number } | null>(null);
   const [editingSection, setEditingSection] = useState<'jobDescription' | 'notes' | null>(null);
   const [contentDraft, setContentDraft] = useState('');
   const [savingSection, setSavingSection] = useState(false);
   const [sectionError, setSectionError] = useState<string | null>(null);
   const [contentOverrides, setContentOverrides] = useState<{ jobDescription?: string | null; notes?: string | null }>({});
   const [journeyRevision, setJourneyRevision] = useState(0);
+
+  useLayoutEffect(() => {
+    const pendingScroll = pendingTabScrollRef.current;
+    if (!pendingScroll) return;
+    if (pendingScroll.applicationId !== selectedId) {
+      pendingTabScrollRef.current = null;
+      return;
+    }
+    if (pendingScroll.tab !== detailTab) return;
+
+    pendingTabScrollRef.current = null;
+    const maxScrollY = Math.max(0, document.documentElement.scrollHeight - window.innerHeight);
+    window.scrollTo({ top: Math.min(pendingScroll.scrollY, maxScrollY), behavior: 'instant' });
+  }, [detailTab, selectedId]);
 
   if (!application) {
     return <section className={styles.unavailable}>
@@ -44,22 +59,9 @@ export default function ApplicationWorkspace({ applications, selectedId, onBack,
     </section>;
   }
 
-  function selectDetailTab(tab: 'jobDescription' | 'notes' | 'checklist' | 'schedule') {
+  function selectDetailTab(tab: DetailTab) {
     if (tab === detailTab) return;
-
-    const panels = tabPanelsRef.current;
-    if (panels) {
-      const panelTop = panels.getBoundingClientRect().top;
-      const heightNeededToKeepViewport = Math.max(0, window.innerHeight - panelTop);
-      setTabPanelMinHeight(current => ({
-        applicationId: selectedId,
-        height: Math.max(
-          current?.applicationId === selectedId ? current.height : 0,
-          heightNeededToKeepViewport,
-        ),
-      }));
-    }
-
+    pendingTabScrollRef.current = { applicationId: selectedId, tab, scrollY: window.scrollY };
     setDetailTab(tab);
   }
 
@@ -221,11 +223,6 @@ export default function ApplicationWorkspace({ applications, selectedId, onBack,
               </div>
 
               <div
-                ref={tabPanelsRef}
-                className={styles.tabPanels}
-                style={{ minHeight: tabPanelMinHeight?.applicationId === selectedId ? `${tabPanelMinHeight.height}px` : undefined }}
-              >
-              <div
                 id="application-job-description-panel"
                 className={styles.tabPanel}
                 role="tabpanel"
@@ -301,7 +298,6 @@ export default function ApplicationWorkspace({ applications, selectedId, onBack,
                   setJourneyRevision(value => value + 1);
                   onChanged();
                 }} />
-              </div>
               </div>
             </>
           )}
