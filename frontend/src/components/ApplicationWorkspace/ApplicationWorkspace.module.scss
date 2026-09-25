@@ -204,6 +204,8 @@
   }
 }
 
+.tabPanels { min-width: 0; overflow-anchor: none; }
+
 .tabPanel[hidden] { display: none; }
 
 .sectionHeading {

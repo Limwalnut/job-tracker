@@ -1,4 +1,4 @@
-import { useState, type FormEvent } from 'react';
+import { useRef, useState, type FormEvent } from 'react';
 import { updateApplication } from '../../api/applications';
 import ApplicationForm from '../ApplicationForm/ApplicationForm';
 import ApplicationChecklist from '../ApplicationChecklist/ApplicationChecklist';
@@ -24,6 +24,8 @@ interface Props {
 export default function ApplicationWorkspace({ applications, selectedId, onBack, onDelete, onChanged, onStatusChanged, scheduleRequest }: Props) {
   const application = applications.find(item => item.id === selectedId);
   const [isEditing, setIsEditing] = useState(false);
+  const tabPanelsRef = useRef<HTMLDivElement>(null);
+  const [tabPanelMinHeight, setTabPanelMinHeight] = useState<{ applicationId: number; height: number } | null>(null);
   const [detailTab, setDetailTab] = useState<'jobDescription' | 'notes' | 'checklist' | 'schedule'>(
     scheduleRequest?.applicationId === selectedId ? 'schedule' : 'jobDescription',
   );
@@ -40,6 +42,25 @@ export default function ApplicationWorkspace({ applications, selectedId, onBack,
       <p>This application may have been removed.</p>
       <button type="button" onClick={onBack}>Back to Applications</button>
     </section>;
+  }
+
+  function selectDetailTab(tab: 'jobDescription' | 'notes' | 'checklist' | 'schedule') {
+    if (tab === detailTab) return;
+
+    const panels = tabPanelsRef.current;
+    if (panels) {
+      const panelTop = panels.getBoundingClientRect().top;
+      const heightNeededToKeepViewport = Math.max(0, window.innerHeight - panelTop);
+      setTabPanelMinHeight(current => ({
+        applicationId: selectedId,
+        height: Math.max(
+          current?.applicationId === selectedId ? current.height : 0,
+          heightNeededToKeepViewport,
+        ),
+      }));
+    }
+
+    setDetailTab(tab);
   }
 
   const currentApplication = application;
@@ -163,7 +184,7 @@ export default function ApplicationWorkspace({ applications, selectedId, onBack,
                   role="tab"
                   aria-selected={detailTab === 'jobDescription'}
                   aria-controls="application-job-description-panel"
-                  onClick={() => setDetailTab('jobDescription')}
+                  onClick={() => selectDetailTab('jobDescription')}
                 >
                   Job Description
                 </button>
@@ -173,7 +194,7 @@ export default function ApplicationWorkspace({ applications, selectedId, onBack,
                   role="tab"
                   aria-selected={detailTab === 'notes'}
                   aria-controls="application-notes-panel"
-                  onClick={() => setDetailTab('notes')}
+                  onClick={() => selectDetailTab('notes')}
                 >
                   Notes
                 </button>
@@ -183,7 +204,7 @@ export default function ApplicationWorkspace({ applications, selectedId, onBack,
                   role="tab"
                   aria-selected={detailTab === 'checklist'}
                   aria-controls="application-checklist-panel"
-                  onClick={() => setDetailTab('checklist')}
+                  onClick={() => selectDetailTab('checklist')}
                 >
                   Checklist
                 </button>
@@ -193,12 +214,17 @@ export default function ApplicationWorkspace({ applications, selectedId, onBack,
                   role="tab"
                   aria-selected={detailTab === 'schedule'}
                   aria-controls="application-schedule-panel"
-                  onClick={() => setDetailTab('schedule')}
+                  onClick={() => selectDetailTab('schedule')}
                 >
                   Schedule
                 </button>
               </div>
 
+              <div
+                ref={tabPanelsRef}
+                className={styles.tabPanels}
+                style={{ minHeight: tabPanelMinHeight?.applicationId === selectedId ? `${tabPanelMinHeight.height}px` : undefined }}
+              >
               <div
                 id="application-job-description-panel"
                 className={styles.tabPanel}
@@ -275,6 +301,7 @@ export default function ApplicationWorkspace({ applications, selectedId, onBack,
                   setJourneyRevision(value => value + 1);
                   onChanged();
                 }} />
+              </div>
               </div>
             </>
           )}
