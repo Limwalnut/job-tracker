@@ -10,6 +10,10 @@ using Microsoft.AspNetCore.HttpOverrides;
 using JobTracker.Api.Authentication;
 using JobTracker.Api.Services;
 using System.Threading.RateLimiting;
+using OpenAI.Responses;
+using System.Text.Json;
+
+#pragma warning disable OPENAI001
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -138,6 +142,16 @@ builder.Services.AddRateLimiter(options =>
                 Window = TimeSpan.FromMinutes(5)
             }));
 });
+
+builder.Services.AddOptions<AiAgentQuotaOptions>()
+    .BindConfiguration(AiAgentQuotaOptions.SectionName)
+    .ValidateDataAnnotations()
+    .ValidateOnStart();
+builder.Services.AddSingleton<AiModelService>();
+builder.Services.AddScoped<InterviewPreparationAgent>();
+builder.Services.AddScoped<AiAgentRunRecorder>();
+
+builder.Services.AddScoped<InterviewPreparationTools>();
 
 var app = builder.Build();
 
@@ -344,5 +358,277 @@ if (!app.Environment.IsDevelopment())
 
     app.MapFallbackToFile("spa-shell.html");
 }
+
+if (app.Environment.IsDevelopment())
+{
+    app.MapGet("/api/ai/test-next-interview", async (
+        ClaimsPrincipal user,
+        InterviewPreparationTools tools,
+        CancellationToken cancellationToken) =>
+    {
+        var userId = user.FindFirstValue(ClaimTypes.NameIdentifier);
+
+        if (userId is null)
+        {
+            return Results.Unauthorized();
+        }
+
+        var interview = await tools.GetNextInterviewAsync(
+            userId,
+            cancellationToken);
+
+        return Results.Ok(new
+        {
+            found = interview is not null,
+            interview
+        });
+    }).RequireAuthorization();
+
+    app.MapPost("/api/ai/test", async (
+        AiModelService ai,
+        CancellationToken cancellationToken) =>
+    {
+        var response = await ai.TestAsync(cancellationToken);
+
+        app.Logger.LogInformation(
+            "AI test usage: input={Input}, output={Output}, total={Total}",
+            response.Usage?.InputTokenCount,
+            response.Usage?.OutputTokenCount,
+            response.Usage?.TotalTokenCount);
+
+        return Results.Ok(new
+        {
+            text = response.GetOutputText(),
+            status = response.Status?.ToString(),
+            inputTokens = response.Usage?.InputTokenCount,
+            outputTokens = response.Usage?.OutputTokenCount,
+            totalTokens = response.Usage?.TotalTokenCount
+        });
+    }).RequireAuthorization();
+
+    app.MapPost("/api/ai/test-tool-selection", async (
+    ClaimsPrincipal user,
+    AiModelService ai,
+    InterviewPreparationTools tools,
+    CancellationToken cancellationToken) =>
+{
+    var userId = user.FindFirstValue(ClaimTypes.NameIdentifier);
+    if (userId is null)
+    {
+        return Results.Unauthorized();
+    }
+
+    var response = await ai.TestToolSelectionAsync(cancellationToken);
+
+    var calls = response.OutputItems
+        .OfType<FunctionCallResponseItem>()
+        .ToArray();
+
+    // Execute at most one tool in this test.
+    if (calls.Length > 1)
+    {
+        return Results.BadRequest(new
+        {
+            error = "Tool call limit exceeded."
+        });
+    }
+
+    if (calls.Length == 0)
+    {
+        return Results.Ok(new
+        {
+            text = response.GetOutputText(),
+            toolExecuted = false
+        });
+    }
+
+    var call = calls[0];
+
+    // Only execute tools explicitly supported by the backend.
+    if (call.FunctionName != "get_next_interview")
+    {
+        return Results.BadRequest(new
+        {
+            error = "Unknown tool."
+        });
+    }
+
+    var interview = await tools.GetNextInterviewAsync(
+        userId,
+        cancellationToken);
+
+    var toolResult = JsonSerializer.Serialize(new
+    {
+        found = interview is not null,
+        interview = interview is null ? null : new
+        {
+            interview.ApplicationId,
+            interview.CompanyName,
+            interview.JobTitle,
+            interview.StartsAt,
+            interview.TimeZone,
+            interview.IsAllDay
+        }
+    });
+
+    var continuedResponse = await ai.ContinueAfterToolAsync(
+        response,
+        call.CallId,
+        toolResult,
+        cancellationToken);
+
+    var pendingToolCalls = continuedResponse.OutputItems
+        .OfType<FunctionCallResponseItem>()
+        .Select(item => new
+        {
+            callId = item.CallId,
+            name = item.FunctionName,
+            arguments = item.FunctionArguments.ToString()
+        })
+        .ToArray();
+
+    return Results.Ok(new
+    {
+        text = continuedResponse.GetOutputText(),
+        pendingToolCalls,
+        modelCalls = 2,
+        toolExecutions = 1,
+        inputTokens =
+            (response.Usage?.InputTokenCount ?? 0) +
+            (continuedResponse.Usage?.InputTokenCount ?? 0),
+        outputTokens =
+            (response.Usage?.OutputTokenCount ?? 0) +
+            (continuedResponse.Usage?.OutputTokenCount ?? 0),
+        totalTokens =
+            (response.Usage?.TotalTokenCount ?? 0) +
+            (continuedResponse.Usage?.TotalTokenCount ?? 0)
+    });
+}).RequireAuthorization();
+
+    app.MapPost("/api/ai/test-agent", async (
+        ClaimsPrincipal user,
+        InterviewPreparationAgent agent,
+        HttpContext httpContext,
+        CancellationToken cancellationToken) =>
+    {
+        var userId = user.FindFirstValue(ClaimTypes.NameIdentifier);
+
+        if (userId is null)
+        {
+            return Results.Unauthorized();
+        }
+
+        try
+        {
+            var result = await agent.RunAsync(
+                userId,
+                cancellationToken);
+
+            return Results.Ok(result);
+        }
+        catch (AiAgentQuotaExceededException exception)
+        {
+            var retryAfterSeconds = Math.Max(
+                0,
+                (int)Math.Ceiling(
+                    (exception.ResetAtUtc - DateTimeOffset.UtcNow).TotalSeconds));
+            httpContext.Response.Headers["Retry-After"] =
+                retryAfterSeconds.ToString(
+                    System.Globalization.CultureInfo.InvariantCulture);
+
+            return Results.Json(
+                new
+                {
+                    code = "daily_run_quota_exceeded",
+                    dailyRunLimit = exception.DailyRunLimit,
+                    resetAtUtc = exception.ResetAtUtc
+                },
+                statusCode: StatusCodes.Status429TooManyRequests);
+        }
+        catch (OperationCanceledException)
+            when (!cancellationToken.IsCancellationRequested)
+        {
+            return Results.Problem(
+                title: "Interview preparation timed out.",
+                detail: "Please try again later.",
+                statusCode: StatusCodes.Status504GatewayTimeout);
+        }
+    }).RequireAuthorization();
+}
+
+app.MapPost("/api/ai/interview-preparation", async (
+    ClaimsPrincipal user,
+    IServiceProvider services,
+    IConfiguration configuration,
+    HttpContext httpContext,
+    CancellationToken cancellationToken) =>
+{
+    var userId = user.FindFirstValue(ClaimTypes.NameIdentifier);
+    if (userId is null)
+    {
+        return Results.Unauthorized();
+    }
+
+    if (string.IsNullOrWhiteSpace(configuration["OpenAI:ApiKey"]))
+    {
+        return Results.Json(
+            new
+            {
+                code = "ai_unavailable",
+                message = "Interview preparation is temporarily unavailable. Please try again later."
+            },
+            statusCode: StatusCodes.Status503ServiceUnavailable);
+    }
+
+    try
+    {
+        var agent = services.GetRequiredService<InterviewPreparationAgent>();
+        var result = await agent.RunAsync(userId, cancellationToken);
+        return Results.Ok(result);
+    }
+    catch (AiAgentQuotaExceededException exception)
+    {
+        var retryAfterSeconds = Math.Max(
+            0,
+            (int)Math.Ceiling(
+                (exception.ResetAtUtc - DateTimeOffset.UtcNow).TotalSeconds));
+        httpContext.Response.Headers["Retry-After"] =
+            retryAfterSeconds.ToString(
+                System.Globalization.CultureInfo.InvariantCulture);
+
+        return Results.Json(
+            new
+            {
+                code = "daily_run_quota_exceeded",
+                dailyRunLimit = exception.DailyRunLimit,
+                resetAtUtc = exception.ResetAtUtc
+            },
+            statusCode: StatusCodes.Status429TooManyRequests);
+    }
+    catch (OperationCanceledException)
+        when (!cancellationToken.IsCancellationRequested)
+    {
+        return Results.Problem(
+            title: "Interview preparation timed out.",
+            detail: "Please try again later.",
+            statusCode: StatusCodes.Status504GatewayTimeout);
+    }
+    catch (OperationCanceledException)
+        when (cancellationToken.IsCancellationRequested)
+    {
+        throw;
+    }
+    catch (Exception exception)
+    {
+        app.Logger.LogError(
+            exception,
+            "Interview preparation failed for user {UserId}.",
+            userId);
+        return Results.Problem(
+            title: "Interview preparation is temporarily unavailable.",
+            detail: "Please try again later.",
+            statusCode: StatusCodes.Status500InternalServerError);
+    }
+}).RequireAuthorization();
 
 app.Run();

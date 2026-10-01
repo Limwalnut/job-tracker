@@ -26,6 +26,8 @@ public class AppDbContext :
 
     public DbSet<AdminAuditLog> AdminAuditLogs { get; set; }
 
+    public DbSet<AiAgentRun> AiAgentRuns { get; set; } = null!;
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);
@@ -52,6 +54,18 @@ public class AppDbContext :
         auditLogEntity.Property(log => log.Detail).HasMaxLength(1000);
         auditLogEntity.HasIndex(log => log.CreatedAtUtc);
         auditLogEntity.HasIndex(log => log.TargetUserId);
+
+        var aiRunEntity = modelBuilder.Entity<AiAgentRun>();
+
+        aiRunEntity.Property(run => run.UserId).HasMaxLength(450);
+        aiRunEntity.Property(run => run.Model).HasMaxLength(100);
+        aiRunEntity.Property(run => run.Status).HasMaxLength(30);
+        aiRunEntity.Property(run => run.StopReason).HasMaxLength(100);
+        aiRunEntity.HasOne(run => run.User)
+            .WithMany()
+            .HasForeignKey(run => run.UserId)
+            .OnDelete(DeleteBehavior.Cascade);
+        aiRunEntity.HasIndex(run => new { run.UserId, run.StartedAtUtc });
 
         modelBuilder.Entity<JobApplication>()
             .Property(application => application.Status)

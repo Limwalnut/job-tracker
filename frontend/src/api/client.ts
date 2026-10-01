@@ -1,10 +1,12 @@
 export class ApiError extends Error {
   readonly status: number;
+  readonly payload: unknown;
 
-  constructor(status: number, message: string) {
+  constructor(status: number, message: string, payload: unknown = null) {
     super(message);
     this.name = "ApiError";
     this.status = status;
+    this.payload = payload;
   }
 }
 
@@ -48,6 +50,7 @@ async function send(path: string, options: RequestInit): Promise<Response> {
     throw new ApiError(
       response.status,
       getErrorMessage(problem, response.status),
+      problem,
     );
   }
   return response;

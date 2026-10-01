@@ -45,6 +45,15 @@ The experience is designed for both desktop and mobile, with a simple interface 
 - Review status distribution across the job search.
 - Open recent applications and upcoming events quickly.
 - Use the same workspace comfortably on desktop, tablet, and mobile.
+- Generate interview preparation from the next scheduled interview, then choose which checklist suggestions to add.
+
+### AI interview preparation
+
+The authenticated `POST /api/ai/interview-preparation` endpoint powers the Dashboard's **Prepare for next interview** dialog. Select **Generate preparation** to request a concise plan and practice questions. Checklist suggestions remain proposals until selected and added; the application checklist API checks ownership and avoids saving titles already on the checklist.
+
+Agent runs are limited to five per user per UTC day by default. Set `AiAgentQuota__DailyRunLimit` to a positive integer to change the limit. A quota response uses HTTP 429 and includes the reset time.
+
+Configure the production OpenAI credential through the secret environment variable `OpenAI__ApiKey`; do not put credential values in configuration files. The endpoint requires the `AiAgentRuns` table, so apply the `AddAiAgentRuns` migration before enabling the feature in an existing production database.
 
 ## Account and access
 

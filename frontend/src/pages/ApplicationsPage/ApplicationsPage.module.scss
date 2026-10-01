@@ -199,6 +199,28 @@ $text: #172033;
   }
 }
 
+.pageHeaderActions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+}
+
+.interviewAction {
+  min-height: 42px;
+  padding: 10px 16px;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  color: #3730a3;
+  background: #fff;
+  font: inherit;
+  font-weight: 650;
+  cursor: pointer;
+
+  &:hover { background: #eef0ff; }
+  &:focus-visible { outline: 3px solid rgb(67 56 202 / 24%); outline-offset: 2px; }
+}
+
 .breadcrumb {
   margin: 0;
   color: #8892a7;
@@ -550,6 +572,7 @@ $text: #172033;
   .navItem { gap: 7px; font-size: 0.78rem; }
   .navItem svg { width: 17px; height: 17px; }
   .pageHeader { align-items: flex-start; flex-direction: column; }
+  .pageHeaderActions { width: 100%; }
   .metrics { grid-template-columns: 1fr 1fr; gap: 10px; }
   .metricCard { padding: 17px; }
   .metricCard strong { font-size: 1.8rem; }
