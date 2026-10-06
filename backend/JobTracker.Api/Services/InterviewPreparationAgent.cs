@@ -18,12 +18,26 @@ public sealed class InterviewPreparationAgent(
 
     public async Task<InterviewPreparationResult> RunAsync(
         string userId,
+        int applicationId,
         CancellationToken cancellationToken)
     {
         if (string.IsNullOrWhiteSpace(userId))
         {
             throw new ArgumentException(
                 "A current user ID is required.", nameof(userId));
+        }
+
+        if (applicationId <= 0)
+        {
+            throw new ArgumentOutOfRangeException(nameof(applicationId));
+        }
+
+        if (!await tools.OwnsApplicationAsync(
+            userId,
+            applicationId,
+            cancellationToken))
+        {
+            throw new ApplicationNotFoundException(applicationId);
         }
 
         var run = await recorder.StartAsync(
@@ -38,7 +52,10 @@ public sealed class InterviewPreparationAgent(
         var history = new List<ResponseItem>
         {
             ResponseItem.CreateUserMessageItem(
-                "Help me prepare for my next interview.")
+                $"Help me prepare for an interview for application {applicationId}. " +
+                "Use the tools to retrieve details and an upcoming interview for this application. " +
+                "If no interview is scheduled, still prepare using the job description and notes. " +
+                $"Set applicationId in the final advice to {applicationId}.")
         };
         var toolsUsed = new List<string>();
         var modelCalls = 0;
@@ -158,7 +175,7 @@ public sealed class InterviewPreparationAgent(
 
                         if (parsed is null ||
                             string.IsNullOrWhiteSpace(parsed.Summary) ||
-                            parsed.ApplicationId is <= 0 ||
+                            parsed.ApplicationId != applicationId ||
                             parsed.PreparationPlan.Any(string.IsNullOrWhiteSpace) ||
                             parsed.PracticeQuestions.Any(string.IsNullOrWhiteSpace) ||
                             parsed.SuggestedChecklistItems.Any(item =>
@@ -196,6 +213,7 @@ public sealed class InterviewPreparationAgent(
 
                     var toolResult = await tools.ExecuteAsync(
                         userId,
+                        applicationId,
                         call.FunctionName,
                         call.FunctionArguments.ToString(),
                         timeout.Token);

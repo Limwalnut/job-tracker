@@ -4,6 +4,7 @@ import ApplicationForm from '../ApplicationForm/ApplicationForm';
 import ApplicationChecklist from '../ApplicationChecklist/ApplicationChecklist';
 import ApplicationSchedule from '../ApplicationSchedule/ApplicationSchedule';
 import ApplicationTimeline from '../ApplicationTimeline/ApplicationTimeline';
+import InterviewPreparationDialog from '../InterviewPreparationDialog/InterviewPreparationDialog';
 import StatusBadge from '../StatusBadge/StatusBadge';
 import WorkspaceActionButton from '../WorkspaceActionButton/WorkspaceActionButton';
 import WorkspaceEmptyState from '../WorkspaceEmptyState/WorkspaceEmptyState';
@@ -26,6 +27,8 @@ type DetailTab = 'jobDescription' | 'notes' | 'checklist' | 'schedule';
 export default function ApplicationWorkspace({ applications, selectedId, onBack, onDelete, onChanged, onStatusChanged, scheduleRequest }: Props) {
   const application = applications.find(item => item.id === selectedId);
   const [isEditing, setIsEditing] = useState(false);
+  const [preparingInterview, setPreparingInterview] = useState(false);
+  const [checklistRevision, setChecklistRevision] = useState(0);
   const [detailTab, setDetailTab] = useState<DetailTab>(
     scheduleRequest?.applicationId === selectedId ? 'schedule' : 'jobDescription',
   );
@@ -141,6 +144,17 @@ export default function ApplicationWorkspace({ applications, selectedId, onBack,
         </div>
         {!isEditing && (
           <div className={styles.detailsActions}>
+            <button
+              type="button"
+              className={styles.prepareInterviewAction}
+              onClick={() => setPreparingInterview(true)}
+            >
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M12 2.8 13.9 9l6.3 2-6.3 2-1.9 6.2L10.1 13 3.8 11l6.3-2L12 2.8Z" />
+                <path d="m19 15 .9 2.3 2.3.7-2.3.8L19 21l-.8-2.2-2.2-.8 2.2-.7L19 15Z" />
+              </svg>
+              <span>Prepare for interview</span>
+            </button>
             <WorkspaceActionButton icon="edit" onClick={() => {
               setContentOverrides({});
               setEditingSection(null);
@@ -256,7 +270,10 @@ export default function ApplicationWorkspace({ applications, selectedId, onBack,
                 aria-labelledby="application-checklist-tab"
                 hidden={detailTab !== 'checklist'}
               >
-                <ApplicationChecklist application={application} />
+                <ApplicationChecklist
+                  application={application}
+                  refreshToken={checklistRevision}
+                />
               </div>
 
               <div
@@ -309,5 +326,17 @@ export default function ApplicationWorkspace({ applications, selectedId, onBack,
         />
       </div>
     </article>
+    {preparingInterview && (
+      <InterviewPreparationDialog
+        key={application.id}
+        applicationId={application.id}
+        applicationLabel={`${application.jobTitle} at ${application.companyName}`}
+        onClose={() => setPreparingInterview(false)}
+        onSaved={() => {
+          setChecklistRevision(value => value + 1);
+          onChanged();
+        }}
+      />
+    )}
   </section>;
 }

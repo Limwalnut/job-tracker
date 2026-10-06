@@ -84,7 +84,30 @@
 .detailsActions {
   display: flex;
   align-items: flex-start;
+  flex-wrap: wrap;
   gap: 8px;
+}
+
+.prepareInterviewAction {
+  min-height: 38px;
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 8px 11px;
+  border: 1px solid #d8d9f5;
+  border-radius: 7px;
+  color: #3730a3;
+  background: linear-gradient(135deg, #faf9ff 0%, #eef2ff 100%);
+  font: inherit;
+  font-size: 13px;
+  font-weight: 650;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: border-color 150ms ease, background 150ms ease, box-shadow 150ms ease;
+
+  svg { width: 16px; height: 16px; fill: currentColor; flex: none; }
+  &:hover { border-color: #a5b4fc; background: linear-gradient(135deg, #f5f3ff 0%, #e0e7ff 100%); }
+  &:focus-visible { outline: 2px solid #6366f1; outline-offset: 3px; }
 }
 
 .moreMenu {

@@ -10,35 +10,22 @@ public static class InterviewPreparationToolDefinitions
     {
         return
         [
-            ResponseTool.CreateFunctionTool(
-                functionName: "get_next_interview",
-                functionParameters: BinaryData.FromString("""
-                    {
-                      "type": "object",
-                      "properties": {},
-                      "required": [],
-                      "additionalProperties": false
-                    }
-                    """),
-                strictModeEnabled: true,
-                functionDescription:
-                    "Get the current signed-in user's next scheduled interview. " +
-                    "The result includes the application ID, company, role, " +
-                    "start time, and time zone."),
-
-            CreateApplicationTool(
+            CreateCurrentApplicationTool(
+                "get_application_interview",
+                "Get the next scheduled interview for the current application, if one exists. " +
+                "This tool is already restricted to the application being prepared."),
+            CreateCurrentApplicationTool(
                 "get_application_context",
-                "Read the job description and notes for an application " +
-                "owned by the current signed-in user."),
-
-            CreateApplicationTool(
+                "Read the job description and notes for the current application. " +
+                "This tool is already restricted to the application being prepared."),
+            CreateCurrentApplicationTool(
                 "get_checklist",
-                "Read up to 20 checklist items for an application owned " +
-                "by the current signed-in user. Incomplete items appear first.")
+                "Read up to 20 checklist items for the current application, incomplete items first. " +
+                "This tool is already restricted to the application being prepared.")
         ];
     }
 
-    private static ResponseTool CreateApplicationTool(
+    private static ResponseTool CreateCurrentApplicationTool(
         string name,
         string description)
     {
@@ -47,14 +34,8 @@ public static class InterviewPreparationToolDefinitions
             functionParameters: BinaryData.FromString("""
                 {
                   "type": "object",
-                  "properties": {
-                    "applicationId": {
-                      "type": "integer",
-                      "minimum": 1,
-                      "description": "The application ID returned by another tool."
-                    }
-                  },
-                  "required": ["applicationId"],
+                  "properties": {},
+                  "required": [],
                   "additionalProperties": false
                 }
                 """),

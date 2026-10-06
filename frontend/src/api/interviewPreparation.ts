@@ -17,8 +17,8 @@ export interface InterviewPreparationResult {
   stopReason: string;
 }
 
-export function generateInterviewPreparation() {
-  return requestJson<InterviewPreparationResult>('/ai/interview-preparation', {
+export function generateInterviewPreparation(applicationId: number) {
+  return requestJson<InterviewPreparationResult>(`/applications/${applicationId}/interview-preparation`, {
     method: 'POST',
   });
 }

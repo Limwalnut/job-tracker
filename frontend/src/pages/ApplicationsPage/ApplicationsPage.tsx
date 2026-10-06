@@ -6,7 +6,6 @@ import ApplicationList from '../../components/ApplicationList/ApplicationList';
 import ApplicationWorkspace from '../../components/ApplicationWorkspace/ApplicationWorkspace';
 import EventBoard from '../../components/EventBoard/EventBoard';
 import EventDialog from '../../components/EventDialog/EventDialog';
-import InterviewPreparationDialog from '../../components/InterviewPreparationDialog/InterviewPreparationDialog';
 import PrimaryActionButton from '../../components/PrimaryActionButton/PrimaryActionButton';
 import { useAuth } from '../../auth/useAuth';
 import BrandLogo from '../../components/BrandLogo/BrandLogo';
@@ -84,7 +83,6 @@ function ApplicationsPage() {
     mode: 'delete';
   } | null>(null);
   const [addingApplication, setAddingApplication] = useState(false);
-  const [preparingInterview, setPreparingInterview] = useState(false);
   const [addingEvent, setAddingEvent] = useState(false);
   const [updatingStatusIds, setUpdatingStatusIds] = useState<Set<number>>(() => new Set());
   const [statusError, setStatusError] = useState<string | null>(null);
@@ -284,18 +282,9 @@ function ApplicationsPage() {
             <p>{currentPage.description}</p>
           </div>
           {visibleTab === 'dashboard' && (
-            <div className={styles.pageHeaderActions}>
-              <button
-                type="button"
-                className={styles.interviewAction}
-                onClick={() => setPreparingInterview(true)}
-              >
-                Prepare for next interview
-              </button>
-              <PrimaryActionButton onClick={() => setAddingApplication(true)}>
-                Add application
-              </PrimaryActionButton>
-            </div>
+            <PrimaryActionButton onClick={() => setAddingApplication(true)}>
+              Add application
+            </PrimaryActionButton>
           )}
         </header>
 
@@ -483,12 +472,6 @@ function ApplicationsPage() {
             refresh();
             pagedApplications.refresh();
           }}
-        />
-      )}
-      {preparingInterview && (
-        <InterviewPreparationDialog
-          onClose={() => setPreparingInterview(false)}
-          onSaved={refreshAll}
         />
       )}
       {addingEvent && (

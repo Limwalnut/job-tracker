@@ -8,6 +8,52 @@ namespace JobTracker.Api.Services;
 
 public sealed class InterviewPreparationTools(AppDbContext context)
 {
+    public async Task<bool> OwnsApplicationAsync(
+        string userId,
+        int applicationId,
+        CancellationToken cancellationToken)
+    {
+        if (string.IsNullOrWhiteSpace(userId))
+        {
+            throw new ArgumentException(
+                "A current user ID is required.", nameof(userId));
+        }
+
+        return await context.Applications
+            .AsNoTracking()
+            .AnyAsync(application =>
+                application.Id == applicationId &&
+                application.UserId == userId,
+                cancellationToken);
+    }
+
+    public async Task<ApplicationEventResponse?> GetApplicationInterviewAsync(
+        string userId,
+        int applicationId,
+        CancellationToken cancellationToken)
+    {
+        if (string.IsNullOrWhiteSpace(userId))
+        {
+            throw new ArgumentException(
+                "A current user ID is required.", nameof(userId));
+        }
+
+        var now = DateTimeOffset.UtcNow;
+
+        return await context.ApplicationEvents
+            .AsNoTracking()
+            .Where(applicationEvent =>
+                applicationEvent.ApplicationId == applicationId &&
+                applicationEvent.Application.UserId == userId &&
+                applicationEvent.Type == ApplicationEventType.Interview &&
+                applicationEvent.Status == ApplicationEventStatus.Scheduled &&
+                applicationEvent.StartsAt >= now)
+            .OrderBy(applicationEvent => applicationEvent.StartsAt)
+            .ThenBy(applicationEvent => applicationEvent.Id)
+            .Select(ApplicationEventResponse.Projection)
+            .FirstOrDefaultAsync(cancellationToken);
+    }
+
     public async Task<ApplicationEventResponse?> GetNextInterviewAsync(
         string userId,
         CancellationToken cancellationToken)
@@ -87,12 +133,21 @@ public sealed class InterviewPreparationTools(AppDbContext context)
 
     public async Task<string> ExecuteAsync(
     string userId,
+    int scopedApplicationId,
     string toolName,
     string arguments,
     CancellationToken cancellationToken)
     {
+        if (scopedApplicationId <= 0)
+        {
+            return JsonSerializer.Serialize(new
+            {
+                error = "The current application is invalid."
+            });
+        }
+
         if (toolName is not (
-            "get_next_interview" or
+            "get_application_interview" or
             "get_application_context" or
             "get_checklist"))
         {
@@ -128,18 +183,19 @@ public sealed class InterviewPreparationTools(AppDbContext context)
                 });
             }
 
-            if (toolName == "get_next_interview")
+            if (root.EnumerateObject().Any())
             {
-                if (root.EnumerateObject().Any())
+                return JsonSerializer.Serialize(new
                 {
-                    return JsonSerializer.Serialize(new
-                    {
-                        error = "This tool does not accept arguments."
-                    });
-                }
+                    error = "These tools use the current application and do not accept arguments."
+                });
+            }
 
-                var interview = await GetNextInterviewAsync(
+            if (toolName == "get_application_interview")
+            {
+                var interview = await GetApplicationInterviewAsync(
                     userId,
+                    scopedApplicationId,
                     cancellationToken);
 
                 return JsonSerializer.Serialize(new
@@ -147,25 +203,17 @@ public sealed class InterviewPreparationTools(AppDbContext context)
                     found = interview is not null,
                     interview = interview is null ? null : new
                     {
+                        interview.Id,
                         interview.ApplicationId,
-                        interview.CompanyName,
-                        interview.JobTitle,
+                        interview.Title,
+                        interview.InterviewRound,
+                        interview.InterviewStage,
                         interview.StartsAt,
+                        interview.EndsAt,
+                        interview.IsAllDay,
                         interview.TimeZone,
-                        interview.IsAllDay
+                        interview.Notes
                     }
-                });
-            }
-
-            if (root.EnumerateObject().Count() != 1 ||
-                !root.TryGetProperty("applicationId", out var idElement) ||
-                idElement.ValueKind != JsonValueKind.Number ||
-                !idElement.TryGetInt32(out var applicationId) ||
-                applicationId <= 0)
-            {
-                return JsonSerializer.Serialize(new
-                {
-                    error = "Provide exactly one positive integer applicationId."
                 });
             }
 
@@ -173,7 +221,7 @@ public sealed class InterviewPreparationTools(AppDbContext context)
             {
                 var application = await GetApplicationContextAsync(
                     userId,
-                    applicationId,
+                    scopedApplicationId,
                     cancellationToken);
 
                 return JsonSerializer.Serialize(new
@@ -185,16 +233,15 @@ public sealed class InterviewPreparationTools(AppDbContext context)
 
             var items = await GetChecklistAsync(
                 userId,
-                applicationId,
+                scopedApplicationId,
                 cancellationToken);
 
             return JsonSerializer.Serialize(new
             {
-                applicationId,
+                applicationId = scopedApplicationId,
                 items,
                 limit = 20
             });
         }
     }
 }
-

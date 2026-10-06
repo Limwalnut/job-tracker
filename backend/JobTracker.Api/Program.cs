@@ -505,7 +505,8 @@ if (app.Environment.IsDevelopment())
     });
 }).RequireAuthorization();
 
-    app.MapPost("/api/ai/test-agent", async (
+    app.MapPost("/api/ai/test-agent/{applicationId:int}", async (
+        int applicationId,
         ClaimsPrincipal user,
         InterviewPreparationAgent agent,
         HttpContext httpContext,
@@ -522,6 +523,7 @@ if (app.Environment.IsDevelopment())
         {
             var result = await agent.RunAsync(
                 userId,
+                applicationId,
                 cancellationToken);
 
             return Results.Ok(result);
@@ -556,7 +558,8 @@ if (app.Environment.IsDevelopment())
     }).RequireAuthorization();
 }
 
-app.MapPost("/api/ai/interview-preparation", async (
+app.MapPost("/api/applications/{applicationId:int:min(1)}/interview-preparation", async (
+    int applicationId,
     ClaimsPrincipal user,
     IServiceProvider services,
     IConfiguration configuration,
@@ -583,8 +586,15 @@ app.MapPost("/api/ai/interview-preparation", async (
     try
     {
         var agent = services.GetRequiredService<InterviewPreparationAgent>();
-        var result = await agent.RunAsync(userId, cancellationToken);
+        var result = await agent.RunAsync(
+            userId,
+            applicationId,
+            cancellationToken);
         return Results.Ok(result);
+    }
+    catch (ApplicationNotFoundException)
+    {
+        return Results.NotFound();
     }
     catch (AiAgentQuotaExceededException exception)
     {

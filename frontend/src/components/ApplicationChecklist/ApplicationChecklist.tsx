@@ -13,6 +13,7 @@ import styles from './ApplicationChecklist.module.scss';
 
 interface Props {
   application: JobApplication;
+  refreshToken?: number;
 }
 
 const emptyDraft: ChecklistItemRequest = { title: '', dueDate: null };
@@ -29,7 +30,7 @@ function isOverdue(item: ChecklistItem) {
   return item.dueDate < localDate;
 }
 
-export default function ApplicationChecklist({ application }: Props) {
+export default function ApplicationChecklist({ application, refreshToken = 0 }: Props) {
   const [items, setItems] = useState<ChecklistItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -54,7 +55,7 @@ export default function ApplicationChecklist({ application }: Props) {
       })
       .finally(() => { if (!controller.signal.aborted) setLoading(false); });
     return () => controller.abort();
-  }, [application.id, revision]);
+  }, [application.id, refreshToken, revision]);
 
   const incompleteItems = items.filter(item => !item.isCompleted);
   const completedItems = items.filter(item => item.isCompleted);

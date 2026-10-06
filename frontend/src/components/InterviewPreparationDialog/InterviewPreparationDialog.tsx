@@ -7,6 +7,8 @@ import { isDialogBackdropPointer } from '../../utils/dialog';
 import styles from './InterviewPreparationDialog.module.scss';
 
 interface Props {
+  applicationId: number;
+  applicationLabel: string;
   onClose: () => void;
   onSaved: () => void;
 }
@@ -36,7 +38,7 @@ function normalizeTitle(title: string) {
   return title.trim().toLocaleLowerCase();
 }
 
-export default function InterviewPreparationDialog({ onClose, onSaved }: Props) {
+export default function InterviewPreparationDialog({ applicationId, applicationLabel, onClose, onSaved }: Props) {
   const dialog = useRef<HTMLDialogElement>(null);
   const generationInFlight = useRef(false);
   const saveInFlight = useRef(false);
@@ -79,9 +81,9 @@ export default function InterviewPreparationDialog({ onClose, onSaved }: Props) 
     setSavedIndexes(new Set());
     setExistingIndexes(new Set());
     try {
-      const nextResult = await generateInterviewPreparation();
+      const nextResult = await generateInterviewPreparation(applicationId);
       setResult(nextResult);
-      if (!nextResult.completed || !nextResult.advice) {
+      if (!nextResult.completed || !nextResult.advice || nextResult.advice.applicationId !== applicationId) {
         setError('We could not prepare a reliable plan this time. Please try again.');
       }
     } catch (requestError) {
@@ -102,7 +104,7 @@ export default function InterviewPreparationDialog({ onClose, onSaved }: Props) 
   }
 
   async function addSelectedItems() {
-    if (saveInFlight.current || busy || !advice?.applicationId) return;
+    if (saveInFlight.current || busy || advice?.applicationId !== applicationId) return;
     const pendingIndexes = [...selectedIndexes]
       .filter(index => !savedIndexes.has(index) && !existingIndexes.has(index));
     if (pendingIndexes.length === 0) return;
@@ -114,7 +116,7 @@ export default function InterviewPreparationDialog({ onClose, onSaved }: Props) 
 
     let existingItems;
     try {
-      existingItems = await getChecklistItems(advice.applicationId);
+      existingItems = await getChecklistItems(applicationId);
     } catch (requestError) {
       setSaveError(`Could not check the current checklist. ${getErrorMessage(requestError)}`);
       setSaving(false);
@@ -137,7 +139,7 @@ export default function InterviewPreparationDialog({ onClose, onSaved }: Props) 
       }
 
       try {
-        await createChecklistItem(advice.applicationId, {
+        await createChecklistItem(applicationId, {
           title: item.title,
           dueDate: item.dueDate,
         });
@@ -176,16 +178,17 @@ export default function InterviewPreparationDialog({ onClose, onSaved }: Props) 
       <div className={styles.heading}>
         <div>
           <p>Interview preparation</p>
-          <h2 id="interview-preparation-title">Prepare for your next interview</h2>
+          <h2 id="interview-preparation-title">Prepare for an interview</h2>
+          <p className={styles.applicationLabel}>{applicationLabel}</p>
         </div>
         <button type="button" onClick={requestClose} disabled={busy || closing} aria-label="Close dialog">Close</button>
       </div>
 
-      {(!result || !result.completed || !result.advice) && !generating && (
+      {(!result || !result.completed || !result.advice || result.advice.applicationId !== applicationId) && !generating && (
         <div className={styles.intro}>
           <p>{result
             ? 'We could not prepare a reliable plan. You can try again.'
-            : 'Use your upcoming interview, job description and checklist to create a focused plan and practice questions.'}</p>
+            : `Create preparation for ${applicationLabel}. We’ll use its job details, checklist, and any scheduled interview; an interview is not required to start.`}</p>
           <button type="button" className={styles.primary} onClick={() => void generate()}>
             {result || error ? 'Try again' : 'Generate preparation'}
           </button>
@@ -194,11 +197,8 @@ export default function InterviewPreparationDialog({ onClose, onSaved }: Props) 
       {generating && <p className={styles.status} role="status">Preparing your interview plan…</p>}
       {error && <p className={styles.error} role="alert">{error}</p>}
 
-      {advice && result?.completed && (
+      {advice && advice.applicationId === applicationId && result?.completed && (
         <div className={styles.content}>
-          {advice.applicationId === null && (
-            <p className={styles.notice}>No upcoming interview was found. Add a scheduled interview to an application for tailored preparation.</p>
-          )}
           <section>
             <h3>Summary</h3>
             <p>{advice.summary}</p>
@@ -215,7 +215,7 @@ export default function InterviewPreparationDialog({ onClose, onSaved }: Props) 
               <ol>{advice.practiceQuestions.map((question, index) => <li key={`${index}-${question}`}>{question}</li>)}</ol>
             </section>
           )}
-          {suggestions.length > 0 && advice.applicationId !== null && (
+          {suggestions.length > 0 && advice.applicationId === applicationId && (
             <section>
               <h3>Checklist suggestions</h3>
               <p>Select the suggestions you want to add to this application.</p>

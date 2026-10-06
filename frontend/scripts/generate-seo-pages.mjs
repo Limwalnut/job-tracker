@@ -12,7 +12,7 @@ const pages = [
   {
     path: '/',
     title: 'Applyline — Job Application Tracker',
-    description: 'Applyline is a job application tracker for organizing roles, application stages, interview schedules, notes and follow-ups in one place.',
+    description: 'Track job applications, interviews, notes and follow-ups, then prepare for each role with a focused AI interview plan and practice questions.',
   },
   {
     path: '/privacy',
