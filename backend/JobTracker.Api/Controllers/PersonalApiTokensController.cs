@@ -11,7 +11,7 @@ namespace JobTracker.Api.Controllers;
 
 [ApiController]
 [Route("api/account/tokens")]
-[Authorize(AuthenticationSchemes = "Identity.Application")]
+[Authorize(AuthenticationSchemes = PersonalApiTokenClaims.IdentityApplicationScheme)]
 [ResponseCache(NoStore = true, Location = ResponseCacheLocation.None)]
 public sealed class PersonalApiTokensController(
     UserManager<ApplicationUser> userManager,

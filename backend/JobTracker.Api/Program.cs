@@ -133,19 +133,12 @@ builder.Services.AddAuthentication(options =>
             options.ForwardDefaultSelector = context =>
             {
                 var authorization = context.Request.Headers.Authorization.ToString();
-                const string bearerPrefix = "Bearer ";
-                if (authorization.StartsWith(bearerPrefix, StringComparison.OrdinalIgnoreCase))
+                if (PersonalApiTokenClaims.TryGetPersonalBearerToken(authorization, out _))
                 {
-                    var bearer = authorization[bearerPrefix.Length..].Trim();
-                    if (bearer.StartsWith(PersonalApiTokenClaims.Prefix, StringComparison.Ordinal))
-                    {
-                        return PersonalApiTokenClaims.Scheme;
-                    }
-
-                    return IdentityConstants.BearerScheme;
+                    return PersonalApiTokenClaims.Scheme;
                 }
 
-                return IdentityConstants.ApplicationScheme;
+                return PersonalApiTokenClaims.IdentityBearerAndApplicationScheme;
             };
         });
 
@@ -187,13 +180,14 @@ builder.Services.AddRateLimiter(options =>
             return RateLimitPartition.GetNoLimiter("not-personal-token");
         }
 
+        var tokenOptions = context.RequestServices
+            .GetRequiredService<Microsoft.Extensions.Options.IOptions<PersonalApiTokenOptions>>();
         return RateLimitPartition.GetFixedWindowLimiter(
             tokenId,
             _ => new FixedWindowRateLimiterOptions
             {
                 AutoReplenishment = true,
-                PermitLimit = builder.Configuration.GetValue<int?>(
-                    $"{PersonalApiTokenOptions.SectionName}:RequestsPerMinute") ?? 120,
+                PermitLimit = tokenOptions.Value.RequestsPerMinute,
                 QueueLimit = 0,
                 Window = TimeSpan.FromMinutes(1)
             });
@@ -302,17 +296,22 @@ if (app.Environment.IsDevelopment())
     app.UseHttpsRedirection();
 }
 
+if (!app.Environment.IsDevelopment())
+{
+    app.UseDefaultFiles(new DefaultFilesOptions
+    {
+        RedirectToAppendTrailingSlash = false
+    });
+    app.UseStaticFiles();
+}
+
 app.UseAuthentication();
 
 app.Use(async (context, next) =>
 {
-    var authorization = context.Request.Headers.Authorization.ToString();
-    const string bearerPrefix = "Bearer ";
-    var hasPersonalToken =
-        authorization.StartsWith(bearerPrefix, StringComparison.OrdinalIgnoreCase) &&
-        authorization[bearerPrefix.Length..].Trim()
-            .StartsWith(PersonalApiTokenClaims.Prefix, StringComparison.Ordinal);
-    if (hasPersonalToken)
+    if (PersonalApiTokenClaims.TryGetPersonalBearerToken(
+            context.Request.Headers.Authorization.ToString(),
+            out _))
     {
         var isValidPersonalToken = context.User.HasClaim(
             PersonalApiTokenClaims.AuthenticationMethod,
@@ -332,15 +331,6 @@ app.Use(async (context, next) =>
 
     await next();
 });
-
-if (!app.Environment.IsDevelopment())
-{
-    app.UseDefaultFiles(new DefaultFilesOptions
-    {
-        RedirectToAppendTrailingSlash = false
-    });
-    app.UseStaticFiles();
-}
 
 app.Use(async (context, next) =>
 {
@@ -372,8 +362,11 @@ app.Use(async (context, next) =>
             }
 
             var now = DateTimeOffset.UtcNow;
-            if (accountState.LastSeenAtUtc is null ||
-                accountState.LastSeenAtUtc < now.AddMinutes(-5))
+            var isPersonalToken = context.User.FindFirst(PersonalApiTokenClaims.AuthenticationMethod)?.Value ==
+                PersonalApiTokenClaims.PersonalToken;
+            if (!isPersonalToken &&
+                (accountState.LastSeenAtUtc is null ||
+                 accountState.LastSeenAtUtc < now.AddMinutes(-5)))
             {
                 await dbContext.Users
                     .Where(user => user.Id == userId)

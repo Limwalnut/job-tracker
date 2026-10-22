@@ -1,6 +1,8 @@
 using JobTracker.Api.Models;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.Extensions.Options;
+using JobTracker.Api.Data;
+using Microsoft.EntityFrameworkCore;
 
 namespace JobTracker.Api.Services;
 
@@ -14,7 +16,8 @@ public sealed class PersonalApiTokenUserManager(
     IdentityErrorDescriber errors,
     IServiceProvider services,
     ILogger<UserManager<ApplicationUser>> logger,
-    PersonalApiTokenService tokenService)
+    PersonalApiTokenService tokenService,
+    AppDbContext dbContext)
     : UserManager<ApplicationUser>(
         store,
         optionsAccessor,
@@ -31,10 +34,12 @@ public sealed class PersonalApiTokenUserManager(
         string currentPassword,
         string newPassword)
     {
+        await using var transaction = await dbContext.Database.BeginTransactionAsync();
         var result = await base.ChangePasswordAsync(user, currentPassword, newPassword);
         if (result.Succeeded)
         {
             await tokenService.RevokeAllAsync(user.Id);
+            await transaction.CommitAsync();
         }
 
         return result;
@@ -45,10 +50,12 @@ public sealed class PersonalApiTokenUserManager(
         string token,
         string newPassword)
     {
+        await using var transaction = await dbContext.Database.BeginTransactionAsync();
         var result = await base.ResetPasswordAsync(user, token, newPassword);
         if (result.Succeeded)
         {
             await tokenService.RevokeAllAsync(user.Id);
+            await transaction.CommitAsync();
         }
 
         return result;
@@ -58,10 +65,12 @@ public sealed class PersonalApiTokenUserManager(
         ApplicationUser user,
         string password)
     {
+        await using var transaction = await dbContext.Database.BeginTransactionAsync();
         var result = await base.AddPasswordAsync(user, password);
         if (result.Succeeded)
         {
             await tokenService.RevokeAllAsync(user.Id);
+            await transaction.CommitAsync();
         }
 
         return result;

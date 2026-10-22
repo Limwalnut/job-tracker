@@ -208,7 +208,7 @@ export default function AccountPage() {
             </form>
           </section>
 
-          <PersonalApiTokens key={tokenRefreshKey} refreshKey={tokenRefreshKey} />
+          <PersonalApiTokens refreshKey={tokenRefreshKey} />
 
           <section className={`${styles.card} ${styles.sessionCard}`} aria-labelledby="session-title">
             <div>

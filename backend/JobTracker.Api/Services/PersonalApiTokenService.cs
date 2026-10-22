@@ -52,15 +52,10 @@ public sealed class PersonalApiTokenService(
 
         var existingTokens = await dbContext.PersonalApiTokens
             .AsNoTracking()
-            .Include(token => token.User)
             .Where(token => token.UserId == user.Id && token.RevokedAtUtc == null)
             .ToListAsync(cancellationToken);
         var activeCount = existingTokens.Count(token =>
-            (token.ExpiresAtUtc is null || token.ExpiresAtUtc > now) &&
-            string.Equals(
-                token.SecurityStampAtCreation,
-                token.User.SecurityStamp ?? string.Empty,
-                StringComparison.Ordinal));
+            token.ExpiresAtUtc is null || token.ExpiresAtUtc > now);
 
         if (activeCount >= options.Value.MaxActiveTokens)
         {
@@ -77,7 +72,6 @@ public sealed class PersonalApiTokenService(
             Name = normalizedName,
             SecretHash = secretHash,
             DisplayPrefix = $"{PersonalApiTokenClaims.Prefix}{secret[..4]}…",
-            SecurityStampAtCreation = user.SecurityStamp ?? string.Empty,
             CreatedAtUtc = now,
             ExpiresAtUtc = expiresAtUtc
         };
@@ -108,7 +102,7 @@ public sealed class PersonalApiTokenService(
 
         return tokens
             .OrderByDescending(token => token.CreatedAtUtc)
-            .Select(token => ToResponse(token, user.SecurityStamp))
+            .Select(ToResponse)
             .ToList();
     }
 
@@ -146,11 +140,7 @@ public sealed class PersonalApiTokenService(
         if (token is null ||
             token.RevokedAtUtc is not null ||
             token.ExpiresAtUtc is not null && token.ExpiresAtUtc <= now ||
-            token.User.DisabledAtUtc is not null ||
-            !string.Equals(
-                token.SecurityStampAtCreation,
-                token.User.SecurityStamp ?? string.Empty,
-                StringComparison.Ordinal))
+            token.User.DisabledAtUtc is not null)
         {
             return null;
         }
@@ -188,15 +178,9 @@ public sealed class PersonalApiTokenService(
         return Convert.ToHexString(hash);
     }
 
-    private static PersonalApiTokenResponse ToResponse(
-        PersonalApiToken token,
-        string? currentSecurityStamp)
+    private static PersonalApiTokenResponse ToResponse(PersonalApiToken token)
     {
-        var status = token.RevokedAtUtc is not null ||
-                     !string.Equals(
-                         token.SecurityStampAtCreation,
-                         currentSecurityStamp ?? string.Empty,
-                         StringComparison.Ordinal)
+        var status = token.RevokedAtUtc is not null
             ? "revoked"
             : token.ExpiresAtUtc is not null && token.ExpiresAtUtc <= DateTimeOffset.UtcNow
                 ? "expired"

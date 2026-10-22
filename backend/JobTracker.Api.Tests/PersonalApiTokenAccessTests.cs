@@ -68,7 +68,24 @@ public sealed class PersonalApiTokenAccessTests
             status = "Screening"
         });
         Assert.Equal(HttpStatusCode.NoContent, changeStatus.StatusCode);
-        Assert.Equal(HttpStatusCode.OK, (await token.GetAsync($"/api/applications/{applicationId}/timeline")).StatusCode);
+        using var tokenTimelineResponse = await token.GetAsync($"/api/applications/{applicationId}/timeline");
+        Assert.Equal(HttpStatusCode.OK, tokenTimelineResponse.StatusCode);
+        using var tokenTimeline = JsonDocument.Parse(await tokenTimelineResponse.Content.ReadAsStringAsync());
+        var tokenChange = tokenTimeline.RootElement.EnumerateArray()
+            .Single(entry => entry.GetProperty("toStatus").GetString() == "Screening");
+        Assert.Equal("Applied", tokenChange.GetProperty("fromStatus").GetString());
+        Assert.Equal("Manual", tokenChange.GetProperty("source").GetString());
+        var cookieChangeStatus = await cookie.PatchAsJsonAsync($"/api/applications/{applicationId}/status", new
+        {
+            status = "Interviewing"
+        });
+        Assert.Equal(HttpStatusCode.NoContent, cookieChangeStatus.StatusCode);
+        using var cookieTimelineResponse = await cookie.GetAsync($"/api/applications/{applicationId}/timeline");
+        using var cookieTimeline = JsonDocument.Parse(await cookieTimelineResponse.Content.ReadAsStringAsync());
+        var cookieChange = cookieTimeline.RootElement.EnumerateArray()
+            .Single(entry => entry.GetProperty("toStatus").GetString() == "Interviewing");
+        Assert.Equal("Screening", cookieChange.GetProperty("fromStatus").GetString());
+        Assert.Equal(tokenChange.GetProperty("source").GetString(), cookieChange.GetProperty("source").GetString());
         Assert.Equal(HttpStatusCode.NoContent, (await token.PostAsync($"/api/applications/{applicationId}/timeline/undo", content: null)).StatusCode);
 
         Assert.Equal(HttpStatusCode.OK, (await token.GetAsync($"/api/applications/{applicationId}/events")).StatusCode);
@@ -218,6 +235,25 @@ public sealed class PersonalApiTokenAccessTests
             status = "Applied"
         })).StatusCode);
         Assert.Equal(HttpStatusCode.NotFound, (await token.DeleteAsync($"/api/applications/{otherApplicationId}")).StatusCode);
+        Assert.Equal(HttpStatusCode.NotFound, (await token.PatchAsJsonAsync($"/api/applications/{otherApplicationId}/status", new
+        {
+            status = "Rejected"
+        })).StatusCode);
+        Assert.Equal(HttpStatusCode.NotFound, (await token.GetAsync($"/api/applications/{otherApplicationId}/timeline")).StatusCode);
+        Assert.Equal(HttpStatusCode.NotFound, (await token.PostAsync($"/api/applications/{otherApplicationId}/timeline/undo", content: null)).StatusCode);
+        Assert.Equal(HttpStatusCode.NotFound, (await token.GetAsync($"/api/applications/{otherApplicationId}/events")).StatusCode);
+        Assert.Equal(HttpStatusCode.NotFound, (await token.PostAsJsonAsync($"/api/applications/{otherApplicationId}/events", new
+        {
+            title = "Must not be created",
+            type = "FollowUp",
+            startsAt = DateTimeOffset.UtcNow.AddDays(2),
+            endsAt = DateTimeOffset.UtcNow.AddDays(2).AddMinutes(30),
+            timeZone = "UTC"
+        })).StatusCode);
+        Assert.Equal(HttpStatusCode.NotFound, (await token.PostAsJsonAsync($"/api/applications/{otherApplicationId}/checklist", new
+        {
+            title = "Must not be created"
+        })).StatusCode);
         Assert.Equal(HttpStatusCode.NotFound, (await token.GetAsync($"/api/events/{otherEventId}")).StatusCode);
         Assert.Equal(HttpStatusCode.NotFound, (await token.PutAsJsonAsync($"/api/events/{otherEventId}", new
         {
@@ -246,8 +282,11 @@ public sealed class PersonalApiTokenAccessTests
             Checklist = await db.ApplicationChecklistItems.AsNoTracking().SingleAsync(row => row.Id == otherChecklistId)
         });
         Assert.Equal("Private Company", unchanged.Application.CompanyName);
+        Assert.Equal(ApplicationStatus.Applied, unchanged.Application.Status);
         Assert.Equal("Private interview", unchanged.Event.Title);
         Assert.Equal("Private checklist item", unchanged.Checklist.Title);
+        Assert.Equal(1, await factory.InScopeAsync(db => db.ApplicationEvents.CountAsync(item => item.ApplicationId == otherApplicationId)));
+        Assert.Equal(1, await factory.InScopeAsync(db => db.ApplicationChecklistItems.CountAsync(item => item.ApplicationId == otherApplicationId)));
     }
 
     [Fact]
@@ -274,21 +313,14 @@ public sealed class PersonalApiTokenAccessTests
         await factory.LoginWithCookieAsync(validCookie, identity);
         var expiringSecret = await factory.CreateTokenAsync(validCookie, "disable test");
         using var expiringToken = factory.CreateTokenClient(expiringSecret);
-        await factory.InScopeAsync(async db =>
-        {
-            var user = await db.Users.SingleAsync(candidate => candidate.Id == identity.UserId);
-            user.DisabledAtUtc = DateTimeOffset.UtcNow;
-            await db.SaveChangesAsync();
-            return 0;
-        });
+        var admin = await factory.CreateIdentityAsync("lifecycle-admin@example.test", admin: true);
+        using var adminCookie = factory.CreateClient(new() { AllowAutoRedirect = false });
+        await factory.LoginWithCookieAsync(adminCookie, admin);
+        var disabled = await adminCookie.PatchAsJsonAsync($"/api/admin/users/{identity.UserId}/status", new { disabled = true });
+        Assert.Equal(HttpStatusCode.OK, disabled.StatusCode);
         Assert.Equal(HttpStatusCode.Unauthorized, (await expiringToken.GetAsync("/api/auth/me")).StatusCode);
-        await factory.InScopeAsync(async db =>
-        {
-            var user = await db.Users.SingleAsync(candidate => candidate.Id == identity.UserId);
-            user.DisabledAtUtc = null;
-            await db.SaveChangesAsync();
-            return 0;
-        });
+        var enabled = await adminCookie.PatchAsJsonAsync($"/api/admin/users/{identity.UserId}/status", new { disabled = false });
+        Assert.Equal(HttpStatusCode.OK, enabled.StatusCode);
         Assert.Equal(HttpStatusCode.OK, (await expiringToken.GetAsync("/api/auth/me")).StatusCode);
 
         var changePassword = await validCookie.PostAsJsonAsync("/api/account/password", new
@@ -298,6 +330,12 @@ public sealed class PersonalApiTokenAccessTests
         });
         Assert.Equal(HttpStatusCode.OK, changePassword.StatusCode);
         Assert.Equal(HttpStatusCode.Unauthorized, (await expiringToken.GetAsync("/api/auth/me")).StatusCode);
+        using (var revokedList = JsonDocument.Parse(await validCookie.GetStringAsync("/api/account/tokens")))
+        {
+            Assert.Contains(revokedList.RootElement.EnumerateArray(), item =>
+                item.GetProperty("name").GetString() == "disable test" &&
+                item.GetProperty("status").GetString() == "revoked");
+        }
 
         var afterChange = await factory.CreateTokenAsync(validCookie, "reset test");
         using var resetToken = factory.CreateTokenClient(afterChange);
@@ -316,6 +354,12 @@ public sealed class PersonalApiTokenAccessTests
         });
         Assert.True(reset.IsSuccessStatusCode, $"Reset failed with {(int)reset.StatusCode}: {await reset.Content.ReadAsStringAsync()}");
         Assert.Equal(HttpStatusCode.Unauthorized, (await resetToken.GetAsync("/api/auth/me")).StatusCode);
+        using (var revokedList = JsonDocument.Parse(await validCookie.GetStringAsync("/api/account/tokens")))
+        {
+            Assert.Contains(revokedList.RootElement.EnumerateArray(), item =>
+                item.GetProperty("name").GetString() == "reset test" &&
+                item.GetProperty("status").GetString() == "revoked");
+        }
     }
 
     [Fact]

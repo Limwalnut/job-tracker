@@ -436,11 +436,6 @@ namespace JobTracker.Api.Migrations
                         .HasMaxLength(64)
                         .HasColumnType("character varying(64)");
 
-                    b.Property<string>("SecurityStampAtCreation")
-                        .IsRequired()
-                        .HasMaxLength(256)
-                        .HasColumnType("character varying(256)");
-
                     b.Property<string>("UserId")
                         .IsRequired()
                         .HasMaxLength(450)

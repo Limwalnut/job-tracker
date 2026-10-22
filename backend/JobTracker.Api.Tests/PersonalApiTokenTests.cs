@@ -7,6 +7,7 @@ using JobTracker.Api.Data;
 using JobTracker.Api.Models;
 using JobTracker.Api.Services;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 
@@ -104,7 +105,7 @@ public sealed class PersonalApiTokenTests
         Assert.Equal(HttpStatusCode.BadRequest, past.StatusCode);
         Assert.Contains("errors", await past.Content.ReadAsStringAsync(), StringComparison.OrdinalIgnoreCase);
 
-        foreach (var badSecret in new[] { "apl_pat_missing", "apl_pat_", "apl_pat_!@#" })
+        foreach (var badSecret in new[] { "apl_pat_missing", "apl_pat_", "apl_pat_!@#", $"apl_pat_{new string('A', 43)}" })
         {
             using var client = factory.CreateTokenClient(badSecret);
             var response = await client.GetAsync("/api/auth/me");
@@ -129,6 +130,11 @@ public sealed class PersonalApiTokenTests
         Assert.Equal(HttpStatusCode.OK, (await cookie.GetAsync("/api/auth/me")).StatusCode);
         Assert.Equal(HttpStatusCode.OK, (await cookie.GetAsync("/api/applications")).StatusCode);
 
+        using var anonymous = factory.CreateClient(new() { AllowAutoRedirect = false, HandleCookies = false });
+        using var anonymousMe = await anonymous.GetAsync("/api/auth/me");
+        Assert.Equal(HttpStatusCode.Unauthorized, anonymousMe.StatusCode);
+        Assert.Null(anonymousMe.Headers.Location);
+
         using var bearerClient = factory.CreateClient(new() { AllowAutoRedirect = false, HandleCookies = false });
         var login = await bearerClient.PostAsJsonAsync("/api/auth/login", new
         {
@@ -140,6 +146,49 @@ public sealed class PersonalApiTokenTests
         var accessToken = loginJson.RootElement.GetProperty("accessToken").GetString()!;
         bearerClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
         Assert.Equal(HttpStatusCode.OK, (await bearerClient.GetAsync("/api/auth/me")).StatusCode);
+    }
+
+    [Fact]
+    public async Task Personal_token_opt_in_inventory_matches_the_twenty_required_routes()
+    {
+        using var factory = new ApplylineFactory();
+        _ = factory.CreateClient();
+        var endpoints = factory.Services.GetRequiredService<Microsoft.AspNetCore.Routing.EndpointDataSource>()
+            .Endpoints
+            .OfType<Microsoft.AspNetCore.Routing.RouteEndpoint>()
+            .Where(endpoint => endpoint.Metadata.GetMetadata<JobTracker.Api.Authentication.AllowPersonalApiTokenAttribute>() is not null)
+            .SelectMany(endpoint => endpoint.Metadata.GetMetadata<Microsoft.AspNetCore.Routing.HttpMethodMetadata>()!.HttpMethods
+                .Select(method => $"{method.ToUpperInvariant()} {NormalizeRoute(endpoint.RoutePattern.RawText!)}"))
+            .ToHashSet(StringComparer.OrdinalIgnoreCase);
+
+        var expected = new[]
+        {
+            "GET /api/auth/me",
+            "GET /api/applications",
+            "GET /api/applications/paged",
+            "GET /api/applications/{id}",
+            "POST /api/applications",
+            "PUT /api/applications/{id}",
+            "DELETE /api/applications/{id}",
+            "PATCH /api/applications/{id}/status",
+            "GET /api/applications/{id}/timeline",
+            "POST /api/applications/{id}/timeline/undo",
+            "GET /api/applications/{applicationId}/events",
+            "POST /api/applications/{applicationId}/events",
+            "GET /api/events",
+            "GET /api/events/{id}",
+            "PUT /api/events/{id}",
+            "DELETE /api/events/{id}",
+            "GET /api/applications/{applicationId}/checklist",
+            "POST /api/applications/{applicationId}/checklist",
+            "PUT /api/checklist/{id}",
+            "DELETE /api/checklist/{id}"
+        };
+        Assert.Equal(expected.OrderBy(x => x), endpoints.OrderBy(x => x));
+
+        static string NormalizeRoute(string route) => "/" + route.TrimStart('/')
+            .Replace(":min(1)", string.Empty, StringComparison.Ordinal)
+            .Replace(":int", string.Empty, StringComparison.Ordinal);
     }
 
     [Fact]
@@ -180,7 +229,10 @@ public sealed class PersonalApiTokenTests
             (HttpMethod.Get, "/api/admin/users", null),
             (HttpMethod.Post, "/api/applications/1/interview-preparation", new { }),
             (HttpMethod.Get, "/health", null),
-            (HttpMethod.Get, "/api/new-controller-added-later", null)
+            (HttpMethod.Get, "/api/ai/test-next-interview", null),
+            (HttpMethod.Post, "/api/ai/test", new { }),
+            (HttpMethod.Post, "/api/ai/test-tool-selection", new { }),
+            (HttpMethod.Post, "/api/ai/test-agent/1", new { })
         })
         {
             using var request = new HttpRequestMessage(method, path);
@@ -248,11 +300,52 @@ public sealed class PersonalApiTokenTests
         using var cookie = factory.CreateClient(new() { AllowAutoRedirect = false });
         await factory.LoginWithCookieAsync(cookie, identity);
         var secret = await factory.CreateTokenAsync(cookie, "rate limited");
+        var secondSecret = await factory.CreateTokenAsync(cookie, "independent rate limit");
         using var token = factory.CreateTokenClient(secret);
+        using var secondToken = factory.CreateTokenClient(secondSecret);
 
         Assert.Equal(HttpStatusCode.OK, (await token.GetAsync("/api/applications")).StatusCode);
         Assert.Equal(HttpStatusCode.OK, (await token.GetAsync("/api/applications")).StatusCode);
         Assert.Equal(HttpStatusCode.TooManyRequests, (await token.GetAsync("/api/applications")).StatusCode);
+        Assert.Equal(HttpStatusCode.OK, (await secondToken.GetAsync("/api/applications")).StatusCode);
+        Assert.Equal(HttpStatusCode.OK, (await cookie.GetAsync("/api/applications")).StatusCode);
+    }
+
+    [Fact]
+    public async Task Password_change_and_token_revocation_roll_back_together_on_failure()
+    {
+        using var factory = new ApplylineFactory();
+        var identity = await factory.CreateIdentityAsync("atomic-password@example.test");
+        using var cookie = factory.CreateClient(new() { AllowAutoRedirect = false });
+        await factory.LoginWithCookieAsync(cookie, identity);
+        var secret = await factory.CreateTokenAsync(cookie, "atomic revocation");
+        using var token = factory.CreateTokenClient(secret);
+
+        using (var scope = factory.Services.CreateScope())
+        {
+            var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+            await db.Database.ExecuteSqlRawAsync("""
+                CREATE TRIGGER fail_token_revocation
+                BEFORE UPDATE OF "RevokedAtUtc" ON "PersonalApiTokens"
+                BEGIN SELECT RAISE(ABORT, 'injected token revocation failure'); END;
+                """);
+            var users = scope.ServiceProvider.GetRequiredService<UserManager<ApplicationUser>>();
+            var user = await users.FindByIdAsync(identity.UserId);
+            Assert.NotNull(user);
+
+            await Assert.ThrowsAsync<SqliteException>(() =>
+                users.ChangePasswordAsync(user!, identity.Password, "ChangedP@ssword123!"));
+
+            await db.Database.ExecuteSqlRawAsync("DROP TRIGGER fail_token_revocation;");
+            db.ChangeTracker.Clear();
+            user = await users.FindByIdAsync(identity.UserId);
+            Assert.NotNull(user);
+            Assert.True(await users.CheckPasswordAsync(user!, identity.Password));
+        }
+
+        Assert.Equal(HttpStatusCode.OK, (await token.GetAsync("/api/auth/me")).StatusCode);
+        using var tokenList = JsonDocument.Parse(await cookie.GetStringAsync("/api/account/tokens"));
+        Assert.Equal("active", tokenList.RootElement[0].GetProperty("status").GetString());
     }
 
     [Fact]

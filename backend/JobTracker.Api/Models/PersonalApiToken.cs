@@ -24,10 +24,6 @@ public sealed class PersonalApiToken
     [MaxLength(32)]
     public string DisplayPrefix { get; set; } = string.Empty;
 
-    [Required]
-    [MaxLength(256)]
-    public string SecurityStampAtCreation { get; set; } = string.Empty;
-
     public DateTimeOffset CreatedAtUtc { get; set; } = DateTimeOffset.UtcNow;
 
     public DateTimeOffset? ExpiresAtUtc { get; set; }

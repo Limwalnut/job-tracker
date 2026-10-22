@@ -72,6 +72,7 @@ export default function PersonalApiTokens({ refreshKey }: Props) {
 
   useEffect(() => {
     const controller = new AbortController();
+    // Defer state updates until after the effect has mounted; cleanup cancels a stale refresh.
     const load = window.setTimeout(() => void loadTokens(controller.signal), 0);
     return () => {
       window.clearTimeout(load);
@@ -144,7 +145,9 @@ export default function PersonalApiTokens({ refreshKey }: Props) {
     setRevokeError('');
     try {
       await revokePersonalApiToken(id);
-      setTokens(current => current.filter(token => token.id !== id));
+      setTokens(current => current.map(token => token.id === id
+        ? { ...token, status: 'revoked', revokedAtUtc: new Date().toISOString() }
+        : token));
       if (oneTimeTokenId === id) {
         setOneTimeSecret(null);
         setOneTimeTokenId(null);

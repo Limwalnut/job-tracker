@@ -74,7 +74,6 @@ public class AppDbContext :
         personalApiTokenEntity.Property(token => token.Name).HasMaxLength(100);
         personalApiTokenEntity.Property(token => token.SecretHash).HasMaxLength(64);
         personalApiTokenEntity.Property(token => token.DisplayPrefix).HasMaxLength(32);
-        personalApiTokenEntity.Property(token => token.SecurityStampAtCreation).HasMaxLength(256);
         personalApiTokenEntity.HasOne(token => token.User)
             .WithMany()
             .HasForeignKey(token => token.UserId)
