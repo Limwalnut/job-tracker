@@ -19,8 +19,7 @@ jobs:
     timeout-minutes: 5
     permissions:
       contents: read
-      pull-requests: read
-      issues: write
+      pull-requests: write
     outputs:
       eligible: ${{ steps.gate.outputs.eligible }}
       round: ${{ steps.gate.outputs.round }}
@@ -255,7 +254,7 @@ jobs:
     timeout-minutes: 5
     permissions:
       contents: read
-      issues: write
+      pull-requests: write
     steps:
       - name: Check out pinned trusted workflow code
         uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
