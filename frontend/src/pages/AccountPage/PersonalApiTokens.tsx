@@ -197,36 +197,38 @@ export default function PersonalApiTokens({ refreshKey }: Props) {
       </div>}
 
       <form className={styles.createForm} onSubmit={event => void createToken(event)}>
-        <label>
-          <span>Token name</span>
-          <input
-            type="text"
-            value={name}
-            maxLength={100}
-            required
-            autoComplete="off"
-            placeholder="e.g. Gogo assistant"
-            onChange={event => {
-              setName(event.target.value);
-              setCreateError('');
-            }}
-          />
+        <label className={styles.nameLabel} htmlFor="personal-token-name">Token name</label>
+        <input
+          className={styles.nameInput}
+          id="personal-token-name"
+          type="text"
+          value={name}
+          maxLength={100}
+          required
+          autoComplete="off"
+          placeholder="e.g. Gogo assistant"
+          onChange={event => {
+            setName(event.target.value);
+            setCreateError('');
+          }}
+        />
+        <label className={styles.expiryLabel} htmlFor="personal-token-expires-at">
+          Expires at <small>Optional</small>
         </label>
-        <label>
-          <span>Expires at <small>Optional</small></span>
-          <input
-            type="datetime-local"
-            value={expiresAt}
-            onChange={event => {
-              setExpiresAt(event.target.value);
-              setCreateError('');
-            }}
-          />
-          <small>Leave blank for a token that does not expire.</small>
-        </label>
+        <input
+          className={styles.expiryInput}
+          id="personal-token-expires-at"
+          type="datetime-local"
+          value={expiresAt}
+          onChange={event => {
+            setExpiresAt(event.target.value);
+            setCreateError('');
+          }}
+        />
+        <small className={styles.expiryHelp}>Leave blank for a token that does not expire.</small>
         {createError && <p className={styles.error} role="alert">{createError}</p>}
         {oneTimeSecret && <p className={styles.formHint}>Dismiss the token reveal before creating another token.</p>}
-        <button type="submit" disabled={createBusy || loading || Boolean(oneTimeSecret)}>
+        <button className={styles.submitButton} type="submit" disabled={createBusy || loading || Boolean(oneTimeSecret)}>
           {createBusy ? 'Creating…' : 'Create token'}
         </button>
       </form>
