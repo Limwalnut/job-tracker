@@ -48,14 +48,28 @@ $text: #172033;
 }
 
 .heading {
-  margin-bottom: 30px;
+  margin-bottom: 24px;
 
-  p { margin: 0 0 6px; color: $accent; font-size: .7rem; font-weight: 750; letter-spacing: .14em; text-transform: uppercase; }
-  h1 { margin: 0 0 10px; color: $navy; font-size: clamp(2.2rem, 5vw, 3.2rem); letter-spacing: -.045em; }
+  h1 { margin: 0 0 6px; color: $navy; font-size: clamp(1.8rem, 4vw, 2.35rem); letter-spacing: -.035em; }
   > span { color: $muted; line-height: 1.5; }
 }
 
-.settingsGrid { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 20px; align-items: start; }
+.settingsLayout { display: grid; grid-template-columns: 190px minmax(0, 1fr); gap: 24px; align-items: start; }
+.sectionNav { display: grid; gap: 4px; padding: 7px; border: 1px solid $border; border-radius: 12px; background: #fff; }
+.sectionNav button { min-height: 42px; padding: 9px 12px; border: 0; border-radius: 7px; color: #4c5871; background: transparent; font: inherit; font-size: .88rem; font-weight: 650; text-align: left; cursor: pointer; }
+.sectionNav button:hover { background: #f5f6fb; }
+.sectionNav .activeNavButton { color: $navy; background: #eef0ff; }
+.sectionContent { min-width: 0; }
+.profileCard { max-width: 760px; }
+.sessionSummary { display: flex; align-items: center; justify-content: space-between; gap: 16px; margin-top: 26px; padding-top: 18px; border-top: 1px solid #e7eaf2; }
+.sessionSummary > div { display: grid; gap: 4px; }
+.sessionSummary strong { color: $text; font-size: .84rem; }
+.sessionSummary span { color: $muted; font-size: .78rem; }
+.subheading { margin: 18px 0 4px; color: $navy; font-size: .98rem; }
+.passwordSection { margin-top: 24px; padding-top: 20px; border-top: 1px solid #e7eaf2; }
+.passwordHeading { display: flex; align-items: center; justify-content: space-between; gap: 18px; }
+.passwordHeading h3 { margin: 0; color: $navy; font-size: .98rem; }
+.passwordHeading p { margin: 5px 0 0; color: $muted; font-size: .8rem; line-height: 1.45; }
 
 .card {
   padding: clamp(22px, 3vw, 32px);
@@ -121,6 +135,7 @@ $text: #172033;
     &:disabled { opacity: .6; cursor: wait; }
   }
 }
+.form[hidden] { display: none; }
 
 .methods {
   display: grid;
@@ -174,8 +189,9 @@ $text: #172033;
 @media (max-width: 760px) {
   .header { height: 66px; }
   .main { padding-top: 34px; }
-  .settingsGrid { grid-template-columns: 1fr; }
-  .sessionCard { grid-column: auto; }
+  .settingsLayout { grid-template-columns: 1fr; gap: 14px; }
+  .sectionNav { display: flex; overflow-x: auto; gap: 3px; padding: 5px; }
+  .sectionNav button { flex: 1 0 auto; text-align: center; }
 }
 
 @media (max-width: 480px) {
@@ -184,5 +200,6 @@ $text: #172033;
   .card { padding: 20px; }
   .methods > div { grid-template-columns: auto minmax(0, 1fr); }
   .methodStatus { grid-column: 2; width: fit-content; }
-  .sessionCard { align-items: flex-start; flex-direction: column; }
+  .sessionSummary { align-items: flex-start; flex-direction: column; }
+  .passwordHeading { align-items: flex-start; flex-direction: column; }
 }

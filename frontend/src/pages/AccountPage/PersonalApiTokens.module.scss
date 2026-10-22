@@ -5,7 +5,6 @@ $muted: #68738b;
 $text: #172033;
 
 .card {
-  grid-column: 1 / -1;
   min-width: 0;
   padding: clamp(22px, 3vw, 32px);
   border: 1px solid $border;
@@ -22,9 +21,13 @@ $text: #172033;
   border-bottom: 1px solid #e7eaf2;
 
   > div { min-width: 0; flex: 1; }
-  p { margin: 0 0 3px; color: $accent; font-size: .66rem; font-weight: 750; letter-spacing: .12em; text-transform: uppercase; }
-  h2 { margin: 0; color: $navy; font-size: 1.25rem; }
+  h2 { margin: 0; color: $navy; font-size: 1.2rem; }
 }
+
+.cardActions { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 8px; }
+.createButton { min-height: 40px; padding: 8px 14px; border: 1px solid $accent; border-radius: 7px; color: #fff; background: $accent; font: inherit; font-size: .8rem; font-weight: 700; cursor: pointer; }
+.createButton:hover:not(:disabled) { background: #3329a5; }
+.createButton:disabled { opacity: .6; cursor: not-allowed; }
 
 .icon {
   display: grid;
@@ -107,10 +110,11 @@ $text: #172033;
 
   label { min-width: 0; color: $text; font-size: .83rem; font-weight: 700; }
   label small { color: $muted; font-size: .74rem; font-weight: 400; }
-  input { width: 100%; min-height: 42px; min-width: 0; padding: 9px 11px; border: 1px solid #bfc8d8; border-radius: 7px; color: $text; background: #fff; font: inherit; font-size: .9rem; }
-  input:focus { border-color: $accent; outline: 0; box-shadow: 0 0 0 3px rgb(67 56 202 / 12%); }
+  input, select { width: 100%; min-height: 42px; min-width: 0; padding: 9px 11px; border: 1px solid #bfc8d8; border-radius: 7px; color: $text; background: #fff; font: inherit; font-size: .9rem; }
+  input:focus, select:focus { border-color: $accent; outline: 0; box-shadow: 0 0 0 3px rgb(67 56 202 / 12%); }
   > button { grid-area: submit; align-self: start; min-height: 42px; white-space: nowrap; }
 }
+.createForm[hidden] { display: none; }
 
 .nameLabel { grid-area: name-label; }
 .nameInput { grid-area: name-input; }
@@ -194,7 +198,8 @@ $text: #172033;
 @media (max-width: 520px) {
   .card { padding: 20px; }
   .cardHeading { flex-wrap: wrap; }
-  .refreshButton { margin-left: 62px; }
+  .cardHeading { justify-content: space-between; }
+  .cardActions { justify-content: flex-start; }
   .secretNotice { flex-direction: column; }
   .secretActions { flex-direction: row; flex-wrap: wrap; }
   .createForm {
