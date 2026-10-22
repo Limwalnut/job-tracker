@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import {
   encodeAttemptMarker,
   isEligibleReview,
+  isAllowedPublishBranch,
   isProtectedPath,
   latestMatchingReview,
   matchesRequirement,
@@ -10,20 +11,20 @@ import {
   parseReviewVerdict,
   reserveAttempt,
 } from './review-policy.mjs';
-import { parseAndValidatePatchNumstat, verifyPatchDigest } from './patch-policy.mjs';
+import { parseAndValidatePatchNumstat, validateBaseTreeModes, validatePackageScriptsUnchanged, validatePatchText, verifyPatchDigest } from './patch-policy.mjs';
 
 const SHA = 'a'.repeat(40);
 const BASE_PR = {
   state: 'open',
   draft: false,
-  user: { login: 'Limwalnut' },
+  user: { login: 'Limwalnut', id: 40132701 },
   head: { sha: SHA, ref: 'codex/req-001-update', repo: { full_name: 'Limwalnut/job-tracker' } },
   base: { ref: 'main' },
   title: 'REQ-001: update personal API tokens',
   body: 'Implements REQ-001.',
 };
 const VALID_BODY = '## Review: REQ-001\n\nPlease fix this behavior.\n\n**Verdict: changes requested.**';
-const BASE_REVIEW = { id: 42, user: { login: 'Limwalnut' }, commit_id: SHA, submitted_at: '2026-10-20T12:00:00Z', body: VALID_BODY };
+const BASE_REVIEW = { id: 42, user: { login: 'Limwalnut', id: 40132701 }, commit_id: SHA, submitted_at: '2026-10-20T12:00:00Z', body: VALID_BODY };
 
 function eligible(overrides = {}) {
   const review = overrides.review ?? BASE_REVIEW;
@@ -62,6 +63,9 @@ test('rejects missing, ambiguous, appended, or noncanonical verdict text', () =>
   assert.equal(parseReviewVerdict('## Review: REQ-001\n\n```text\nVerdict: changes requested\n```').verdict, null);
   assert.equal(parseReviewVerdict('## Review: REQ-001\n\nVerdict: ready.\n\n```md\nVerdict: changes requested\n```').verdict, 'ready');
   assert.equal(parseReviewVerdict('## Review: REQ-001\n\n<!-- Verdict: changes requested -->\n\nVerdict: ready').verdict, 'ready');
+  assert.equal(parseReviewVerdict('## Review: REQ-001\n\n~~~md\nVerdict: changes requested\n~~~').verdict, null);
+  assert.equal(parseReviewVerdict('## Review: REQ-001\n\n    Verdict: changes requested').verdict, null);
+  assert.equal(parseReviewVerdict('## Review: REQ-001\n\nvErDiCt: ReAdY.').verdict, 'ready');
 });
 
 test('accepts only the expected same-repository reviewer, author, branch, and current commit', () => {
@@ -69,11 +73,18 @@ test('accepts only the expected same-repository reviewer, author, branch, and cu
   assert.equal(eligible({ repository: 'someone/fork' }).reason, 'wrong_repository');
   assert.equal(eligible({ pullRequest: { ...BASE_PR, user: { login: 'someone-else' } } }).reason, 'wrong_pull_request_author');
   assert.equal(eligible({ pullRequest: { ...BASE_PR, head: { ...BASE_PR.head, repo: { full_name: 'other/job-tracker' } } } }).reason, 'fork_pull_request');
-  assert.equal(eligible({ pullRequest: { ...BASE_PR, head: { ...BASE_PR.head, ref: 'feature/work' } } }).reason, 'branch_not_codex_prefix');
+  assert.equal(eligible({ pullRequest: { ...BASE_PR, head: { ...BASE_PR.head, ref: 'feature/work' } } }).reason, 'branch_not_codex_requirement');
   assert.equal(eligible({ pullRequest: { ...BASE_PR, head: { ...BASE_PR.head, sha: 'b'.repeat(40) } } }).reason, 'stale_review_commit');
-  assert.equal(eligible({ review: { ...BASE_REVIEW, user: { login: 'another-reviewer' } } }).reason, 'wrong_reviewer');
+  assert.equal(eligible({ review: { ...BASE_REVIEW, user: { login: 'another-reviewer', id: 9 } } }).reason, 'wrong_reviewer');
   assert.equal(eligible({ review: { ...BASE_REVIEW, state: 'DISMISSED' } }).reason, 'review_dismissed');
   assert.equal(eligible({ latestReview: { ...BASE_REVIEW, id: 99 } }).reason, 'review_not_latest');
+});
+
+test('publish only accepts a branch that is scoped to the exact requirement', () => {
+  assert.equal(isAllowedPublishBranch('codex/req-001-fix', 'REQ-001'), true);
+  assert.equal(isAllowedPublishBranch('codex/req-002-fix', 'REQ-001'), false);
+  assert.equal(isAllowedPublishBranch('codex/review-fix', 'REQ-001'), false);
+  assert.equal(isAllowedPublishBranch('codex/req-001/../../main', 'REQ-001'), false);
 });
 
 test('a newer ready review and unmatched requirement both stop automation', () => {
@@ -91,6 +102,9 @@ test('changes to workflow, policy, secrets, or generated paths are denied', () =
   }
   assert.equal(eligible({ changedPaths: ['.github/workflows/review-autofix.yml'] }).reason, 'automation_or_secret_paths_changed');
   assert.equal(isProtectedPath('backend/JobTracker.Api/Controllers/ApplicationsController.cs'), false);
+  for (const path of ['.vscode/settings.json', 'Dockerfile', 'compose.yaml', '.dockerignore', '.npmrc', 'NuGet.config', 'Directory.Build.props', 'Directory.Build.targets', '.gitattributes', '.gitmodules', '.husky/pre-commit']) {
+    assert.equal(isProtectedPath(path), true, path);
+  }
 });
 
 test('patch validation rejects protected paths, traversal, odd filenames, and binaries', () => {
@@ -103,6 +117,21 @@ test('patch validation rejects protected paths, traversal, odd filenames, and bi
   ]) {
     assert.throws(() => parseAndValidatePatchNumstat(value));
   }
+  for (const patch of [
+    'diff --git a/link b/link\nnew file mode 120000\n',
+    'diff --git a/module b/module\nnew file mode 160000\n',
+    'diff --git a/file b/file\nold mode 100644\nnew mode 100755\n',
+    'diff --git a/image.png b/image.png\nGIT binary patch\n',
+  ]) assert.throws(() => validatePatchText(patch));
+  assert.throws(() => validateBaseTreeModes('120000 blob abcdef\tlink\0', ['link']));
+  assert.throws(() => validateBaseTreeModes('160000 commit abcdef\tmodule\0', ['module']));
+  assert.doesNotThrow(() => validateBaseTreeModes('100644 blob abcdef\tfile.txt\0', ['file.txt']));
+  assert.throws(() => validatePatchText('diff --git a/project.csproj b/project.csproj\n--- a/project.csproj\n+++ b/project.csproj\n@@ -1 +1 @@\n-<Target>\n+<Target>'));
+});
+
+test('package dependency changes are allowed while lifecycle script changes are rejected', () => {
+  validatePackageScriptsUnchanged('{"scripts":{"test":"node test.js"},"dependencies":{}}', '{"scripts":{"test":"node test.js"},"dependencies":{"safe":"1.0.0"}}');
+  assert.throws(() => validatePackageScriptsUnchanged('{"dependencies":{}}', '{"scripts":{"preinstall":"malicious"},"dependencies":{}}'));
 });
 
 test('patch digests bind validation and publishing to the exact generated bytes', () => {

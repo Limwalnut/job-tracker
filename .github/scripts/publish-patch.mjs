@@ -1,7 +1,8 @@
 import { execFileSync } from 'node:child_process';
-import { readFile } from 'node:fs/promises';
-import { decodeAttemptMarker, isEligibleReview, isProtectedPath, latestMatchingReview } from './review-policy.mjs';
-import { parseAndValidatePatchNumstat, verifyPatchDigest } from './patch-policy.mjs';
+import { appendFile, readFile } from 'node:fs/promises';
+import { join } from 'node:path';
+import { decodeAttemptMarker, isAllowedPublishBranch, isEligibleReview, isProtectedPath, latestMatchingReview } from './review-policy.mjs';
+import { parseAndValidatePatchNumstat, validateBaseTreeModes, validatePackageScriptsUnchanged, validatePatchText, verifyPatchDigest } from './patch-policy.mjs';
 import { pullRequestSnapshot } from './github-api.mjs';
 
 const repository = process.env.GITHUB_REPOSITORY;
@@ -11,9 +12,19 @@ const expectedSha = process.env.EXPECTED_HEAD_SHA;
 const expectedReviewId = process.env.EXPECTED_REVIEW_ID;
 const controlPath = process.env.CONTROL_PATH;
 const worktree = process.env.WORKTREE_PATH;
+let worktreeAdded = false;
+
+async function writeOutput(value) {
+  if (!process.env.GITHUB_OUTPUT) throw new Error('GitHub Actions output file is unavailable.');
+  await appendFile(process.env.GITHUB_OUTPUT, `${value}\n`);
+}
 
 function git(args, cwd = worktree, options = {}) {
-  return execFileSync('git', ['-C', cwd, ...args], { stdio: ['ignore', 'pipe', 'pipe'], ...options });
+  return execFileSync('git', ['-c', 'core.fsmonitor=false', '-c', 'core.hooksPath=/dev/null', '-C', cwd, ...args], {
+    stdio: [options.input ? 'pipe' : 'ignore', 'pipe', 'pipe'],
+    env: { ...process.env, GIT_CONFIG_GLOBAL: '/dev/null', GIT_CONFIG_NOSYSTEM: '1', ...options.env },
+    ...options,
+  });
 }
 
 async function verifyCurrentReview() {
@@ -41,17 +52,19 @@ async function verifyCurrentReview() {
 }
 
 async function main() {
-  if (!token || !/^\d+$/.test(number ?? '') || !/^[a-f0-9]{40}$/i.test(expectedSha ?? '') || !worktree || !controlPath) {
+  if (!token || !/^\d+$/.test(number ?? '') || !/^[a-f0-9]{40}$/i.test(expectedSha ?? '') || !worktree || !controlPath || !process.env.GITHUB_OUTPUT || !process.env.PATCH_FILE) {
     throw new Error('Publish context is incomplete.');
   }
   const { branch, requirementId } = await verifyCurrentReview();
-  if (!/^codex\/[A-Za-z0-9._/-]+$/.test(branch) || branch.includes('..') || branch.endsWith('/')) {
+  if (!isAllowedPublishBranch(branch, requirementId)) {
     throw new Error('Publish stopped because the target branch name is unsafe.');
   }
 
   const patch = await readFile(process.env.PATCH_FILE);
   verifyPatchDigest(patch, process.env.EXPECTED_PATCH_SHA256);
+  validatePatchText(patch);
   if (!patch.length) {
+    await writeOutput('result=no-changes');
     console.log('No changes were generated; nothing will be pushed.');
     return;
   }
@@ -60,9 +73,11 @@ async function main() {
   const fetchedHead = git(['rev-parse', 'FETCH_HEAD'], controlPath).toString('utf8').trim();
   if (fetchedHead !== expectedSha) throw new Error('Publish stopped because the PR branch moved after review.');
   git(['worktree', 'add', '--detach', worktree, expectedSha], controlPath);
-  git(['apply', '--check', '--binary'], worktree, { input: patch });
-  const pathsOutput = git(['apply', '--numstat', '--binary'], worktree, { input: patch }).toString('utf8');
-  parseAndValidatePatchNumstat(pathsOutput);
+  worktreeAdded = true;
+  git(['apply', '--check'], worktree, { input: patch });
+  const pathsOutput = git(['apply', '--numstat'], worktree, { input: patch }).toString('utf8');
+  const patchPaths = parseAndValidatePatchNumstat(pathsOutput);
+  validateBaseTreeModes(git(['ls-tree', '-r', '-z', '--full-tree', 'HEAD', '--', ...patchPaths]), patchPaths);
 
   // Recheck before applying the patch, then again after commit immediately before push.
   const beforePush = await verifyCurrentReview();
@@ -70,9 +85,16 @@ async function main() {
   const currentFetchedHead = git(['rev-parse', 'HEAD']).toString('utf8').trim();
   if (currentFetchedHead !== expectedSha) throw new Error('Publish stopped because the fetched branch does not match the reviewed commit.');
 
-  git(['apply', '--binary'], worktree, { input: patch });
+  git(['apply'], worktree, { input: patch });
+  for (const path of patchPaths.filter((value) => value.toLowerCase() === 'package.json' || value.toLowerCase().endsWith('/package.json'))) {
+    let original = '';
+    try { original = git(['show', `HEAD:${path}`], worktree, { stdio: ['ignore', 'pipe', 'ignore'] }).toString('utf8'); }
+    catch { /* New manifest. */ }
+    validatePackageScriptsUnchanged(original, await readFile(join(worktree, path), 'utf8'));
+  }
   const status = git(['status', '--porcelain', '--untracked-files=all']).toString('utf8').trim();
   if (!status) {
+    await writeOutput('result=no-changes');
     console.log('Patch produced no effective changes; nothing will be pushed.');
     return;
   }
@@ -89,11 +111,16 @@ async function main() {
   // No force push: any head update racing this check makes the push fail safely.
   await verifyCurrentReview();
   git(['push', 'origin', `HEAD:refs/heads/${branch}`]);
+  await writeOutput(`published_sha=${git(['rev-parse', 'HEAD']).toString('utf8').trim()}`);
   console.log('Validated changes were pushed to the existing pull request branch.');
-  git(['worktree', 'remove', '--force', worktree], controlPath);
 }
 
 main().catch((error) => {
   console.error(error.message);
   process.exitCode = 1;
+}).finally(() => {
+  if (worktreeAdded) {
+    try { git(['worktree', 'remove', '--force', worktree], controlPath); }
+    catch (error) { console.error(`Worktree cleanup failed: ${error.message}`); process.exitCode = 1; }
+  }
 });

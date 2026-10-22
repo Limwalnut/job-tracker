@@ -13,6 +13,9 @@ async function main() {
   const event = JSON.parse(await readFile(eventPath, 'utf8'));
   const snapshot = await pullRequestSnapshot(repository, number, token);
   const review = snapshot.reviews.find((item) => String(item.id) === String(expectedReviewId));
+  if (event.review?.user?.id !== 40132701 || review?.user?.id !== 40132701 || event.review.user.id !== review.user.id) {
+    throw new Error('Preflight stopped because the event reviewer did not match the PM identity in the GitHub API.');
+  }
   const latestReview = latestMatchingReview(snapshot.reviews);
   const eligibility = isEligibleReview({
     repository,

@@ -1,5 +1,5 @@
 export const EXPECTED_REPOSITORY = 'Limwalnut/job-tracker';
-export const EXPECTED_REVIEWER = 'Limwalnut';
+export const EXPECTED_REVIEWER_ID = 40132701;
 export const MAX_ATTEMPTS = 3;
 export const ATTEMPT_MARKER = '<!-- applyline-review-autofix-attempt:v1:';
 export const HANDOFF_MARKER = '<!-- applyline-review-autofix-handoff:v1 -->';
@@ -12,14 +12,22 @@ export function parseReviewHeader(body) {
 
 export function parseReviewVerdict(body) {
   if (typeof body !== 'string') return { verdict: null, reason: 'missing_body' };
-  let insideFence = false;
-  const lines = body.split(/\r?\n/).filter((line) => {
-    if (/^\s*```/.test(line)) {
-      insideFence = !insideFence;
-      return false;
+  let fence = null;
+  const lines = [];
+  for (const line of body.split(/\r?\n/)) {
+    if (/^(?: {4,}|\t)/.test(line)) continue;
+    if (fence) {
+      const close = new RegExp(`^ {0,3}${fence.char === '`' ? '`' : '~'}{${fence.length},}\\s*$`);
+      if (close.test(line)) fence = null;
+      continue;
     }
-    return !insideFence && !/^\s*<!--/.test(line) && /\bVerdict\b/i.test(line);
-  });
+    const open = line.match(/^ {0,3}(`{3,}|~{3,})/);
+    if (open) {
+      fence = { char: open[1][0], length: open[1].length };
+      continue;
+    }
+    if (!/^\s*<!--/.test(line) && /\bVerdict\b/i.test(line)) lines.push(line);
+  }
   if (lines.length !== 1) return { verdict: null, reason: lines.length ? 'multiple_or_malformed_verdict_lines' : 'missing_verdict' };
 
   const line = lines[0].trim();
@@ -36,9 +44,15 @@ export function matchesRequirement(body, title, prBody) {
   return occurrence.test(title ?? '') || occurrence.test(prBody ?? '') ? requirementId : null;
 }
 
+export function isAllowedPublishBranch(branch, requirementId) {
+  if (!/^REQ-\d{3,}$/i.test(requirementId ?? '')) return false;
+  return new RegExp(`^codex/req-${requirementId.slice(4)}(?:[-/][A-Za-z0-9._/-]+)?$`, 'i').test(branch ?? '') &&
+    !branch.includes('..') && !branch.endsWith('/');
+}
+
 export function latestMatchingReview(reviews) {
   return reviews
-    .filter((review) => review.user?.login === EXPECTED_REVIEWER && parseReviewHeader(review.body))
+    .filter((review) => review.user?.id === EXPECTED_REVIEWER_ID && parseReviewHeader(review.body))
     .sort((a, b) => Date.parse(b.submitted_at ?? 0) - Date.parse(a.submitted_at ?? 0) || Number(b.id) - Number(a.id))[0] ?? null;
 }
 
@@ -46,18 +60,19 @@ export function isEligibleReview({ repository, pullRequest, review, latestReview
   const reject = (reason) => ({ eligible: false, reason });
   if (repository !== EXPECTED_REPOSITORY) return reject('wrong_repository');
   if (!pullRequest || pullRequest.state !== 'open' || pullRequest.draft) return reject('pull_request_not_open');
-  if (pullRequest.user?.login !== EXPECTED_REVIEWER) return reject('wrong_pull_request_author');
+  if (pullRequest.user?.id !== EXPECTED_REVIEWER_ID) return reject('wrong_pull_request_author');
   if (pullRequest.head?.repo?.full_name !== EXPECTED_REPOSITORY) return reject('fork_pull_request');
   if (pullRequest.base?.ref !== 'main') return reject('wrong_base_branch');
-  if (!pullRequest.head?.ref?.startsWith('codex/')) return reject('branch_not_codex_prefix');
+  if (!/^codex\/req-\d{3,}(?:[-/][A-Za-z0-9._/-]+)?$/i.test(pullRequest.head?.ref ?? '') || pullRequest.head.ref.includes('..') || pullRequest.head.ref.endsWith('/')) return reject('branch_not_codex_requirement');
   if (changedPaths.some(isProtectedPath)) return reject('automation_or_secret_paths_changed');
-  if (!review || review.user?.login !== EXPECTED_REVIEWER) return reject('wrong_reviewer');
+  if (!review || review.user?.id !== EXPECTED_REVIEWER_ID) return reject('wrong_reviewer');
   if (!latestReview || Number(latestReview.id) !== Number(review.id)) return reject('review_not_latest');
   if (review.commit_id !== pullRequest.head.sha) return reject('stale_review_commit');
   if (review.state?.toUpperCase() === 'DISMISSED') return reject('review_dismissed');
 
   const requirementId = matchesRequirement(review.body, pullRequest.title, pullRequest.body);
   if (!requirementId) return reject('requirement_id_not_matched');
+  if (!isAllowedPublishBranch(pullRequest.head.ref, requirementId)) return reject('branch_requirement_mismatch');
   const parsed = parseReviewVerdict(review.body);
   if (!parsed.verdict) return reject(parsed.reason);
   if (parsed.verdict !== 'changes_requested') return reject('review_is_ready');
@@ -69,6 +84,10 @@ export function isProtectedPath(path) {
   const lower = normalized.toLowerCase();
   return lower === '.github' || lower.startsWith('.github/') ||
     lower === '.codex' || lower.startsWith('.codex/') ||
+    lower === '.vscode' || lower.startsWith('.vscode/') ||
+    ['dockerfile', 'compose.yaml', 'compose.yml', '.dockerignore', '.npmrc', 'nuget.config',
+      'directory.build.props', 'directory.build.targets', '.gitattributes', '.gitmodules'].includes(lower) ||
+    lower === '.husky' || lower.startsWith('.husky/') ||
     lower === 'agents.md' || lower.endsWith('/agents.md') ||
     lower === '.env' || lower.startsWith('.env.') || lower.endsWith('/.env') || lower.includes('/.env.') ||
     /(^|\/)(secrets?|credentials?)(\/|$)/.test(lower) ||

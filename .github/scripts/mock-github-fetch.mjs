@@ -12,7 +12,12 @@ if (statePath) {
       value = { id: state.postCount, user: { login: 'github-actions[bot]' }, body: JSON.parse(options.body).body };
       state.comments.push(value);
       writeFileSync(statePath, JSON.stringify(state));
-    } else if (request.pathname === '/repos/Limwalnut/job-tracker/pulls/7' && (!options.method || options.method === 'GET')) value = state.pullRequest;
+    } else if (request.pathname === '/repos/Limwalnut/job-tracker/pulls/7' && (!options.method || options.method === 'GET')) {
+      state.pullFetchCount = (state.pullFetchCount ?? 0) + 1;
+      if (state.pullFetchCount === state.changeHeadOnPullFetch) state.pullRequest.head.sha = 'd'.repeat(40);
+      writeFileSync(statePath, JSON.stringify(state));
+      value = state.pullRequest;
+    }
     else if (request.pathname === '/repos/Limwalnut/job-tracker/pulls/7/reviews' && (!options.method || options.method === 'GET')) value = state.reviews;
     else if (request.pathname === '/repos/Limwalnut/job-tracker/pulls/7/files' && (!options.method || options.method === 'GET')) value = state.files;
     else if (request.pathname === '/repos/Limwalnut/job-tracker/issues/7/comments' && (!options.method || options.method === 'GET')) value = state.comments;

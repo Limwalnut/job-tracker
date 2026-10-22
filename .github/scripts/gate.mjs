@@ -8,6 +8,7 @@ const runId = process.env.GITHUB_RUN_ID;
 const eventPath = process.env.GITHUB_EVENT_PATH;
 const outputPath = process.env.GITHUB_OUTPUT;
 const missingKeyMarker = '<!-- applyline-review-autofix-missing-key:v1 -->';
+const PM_ID = 40132701;
 
 function output(name, value) {
   if (!outputPath) throw new Error('GitHub Actions output file is unavailable.');
@@ -21,6 +22,8 @@ async function readEvent() {
 
 async function main() {
   if (!token || !runId) throw new Error('GitHub Actions context is incomplete.');
+  const controlSha = process.env.TRUSTED_CONTROL_SHA;
+  if (!/^[a-f0-9]{40}$/i.test(controlSha ?? '')) throw new Error('Trusted workflow revision is invalid.');
   const event = await readEvent();
   const number = event.pull_request?.number;
   const eventReview = event.review;
@@ -33,6 +36,11 @@ async function main() {
   let snapshot = await pullRequestSnapshot(repository, number, token);
   let latestReview = latestMatchingReview(snapshot.reviews);
   let currentReview = snapshot.reviews.find((review) => String(review.id) === String(eventReview.id));
+  if (eventReview.user?.id !== PM_ID || currentReview?.user?.id !== PM_ID || eventReview.user.id !== currentReview.user.id) {
+    await output('eligible', 'false');
+    console.log('Skipped: review identity did not match the authorized PM in the GitHub API.');
+    return;
+  }
   let eligibility = isEligibleReview({
     repository,
     pullRequest: snapshot.pullRequest,
@@ -67,7 +75,7 @@ async function main() {
     latestReview,
     changedPaths: snapshot.changedFiles.map((file) => file.filename),
   });
-  if (!eligibility.eligible || currentSha !== observedSha) {
+  if (!eligibility.eligible || currentSha !== observedSha || currentReview?.user?.id !== PM_ID || eventReview.user?.id !== currentReview.user.id) {
     await output('eligible', 'false');
     console.log('Skipped: review or PR head changed before attempt reservation.');
     return;
@@ -93,16 +101,13 @@ async function main() {
 
   const round = reservation.round;
   await postIssueComment(repository, number, token, `${reservation.marker}\n\nReserved automatic review-fix attempt ${round}/${MAX_ATTEMPTS} for this review. A failed run still counts toward the limit.`);
-  const controlSha = process.env.TRUSTED_CONTROL_SHA;
-  if (!/^[a-f0-9]{40}$/i.test(controlSha ?? '')) throw new Error('Trusted workflow revision is invalid.');
-  await output('eligible', 'true');
   await output('round', round);
+  await output('pr_number', number);
+  await output('eligible', 'true');
   await output('head_sha', currentSha);
-  await output('branch', snapshot.pullRequest.head.ref);
   await output('review_id', eventReview.id);
   await output('requirement_id', eligibility.requirementId);
   await output('control_sha', controlSha);
-  await output('pr_number', number);
   console.log(`Reserved attempt ${round}/${MAX_ATTEMPTS} for PR #${number}.`);
 }
 
