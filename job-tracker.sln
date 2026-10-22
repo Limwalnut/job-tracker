@@ -6,6 +6,8 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "backend", "backend", "{1AE8
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "JobTracker.Api", "backend\JobTracker.Api\JobTracker.Api.csproj", "{6F024F91-AB16-CFE4-0261-0E934BFEE3BB}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "JobTracker.Api.Tests", "backend\JobTracker.Api.Tests\JobTracker.Api.Tests.csproj", "{A45F7C63-1C4E-4699-9ED7-91B8EDBFA91B}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -16,12 +18,17 @@ Global
 		{6F024F91-AB16-CFE4-0261-0E934BFEE3BB}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{6F024F91-AB16-CFE4-0261-0E934BFEE3BB}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{6F024F91-AB16-CFE4-0261-0E934BFEE3BB}.Release|Any CPU.Build.0 = Release|Any CPU
+		{A45F7C63-1C4E-4699-9ED7-91B8EDBFA91B}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{A45F7C63-1C4E-4699-9ED7-91B8EDBFA91B}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{A45F7C63-1C4E-4699-9ED7-91B8EDBFA91B}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{A45F7C63-1C4E-4699-9ED7-91B8EDBFA91B}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
 	EndGlobalSection
 	GlobalSection(NestedProjects) = preSolution
 		{6F024F91-AB16-CFE4-0261-0E934BFEE3BB} = {1AE8ACA6-933B-BF2A-3671-3E2EAC007D16}
+		{A45F7C63-1C4E-4699-9ED7-91B8EDBFA91B} = {1AE8ACA6-933B-BF2A-3671-3E2EAC007D16}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {0C89230D-5AC7-42BE-A6C5-4A4F5F7A6B3B}

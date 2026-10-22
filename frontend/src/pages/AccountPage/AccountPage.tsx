@@ -5,6 +5,7 @@ import BrandLogo from '../../components/BrandLogo/BrandLogo';
 import { useAuth } from '../../auth/useAuth';
 import { userDisplayName, userInitials } from '../../utils/userPresentation';
 import styles from './AccountPage.module.scss';
+import PersonalApiTokens from './PersonalApiTokens';
 
 export default function AccountPage() {
   const navigate = useNavigate();
@@ -22,6 +23,7 @@ export default function AccountPage() {
   const [passwordBusy, setPasswordBusy] = useState(false);
   const [passwordMessage, setPasswordMessage] = useState('');
   const [passwordError, setPasswordError] = useState('');
+  const [tokenRefreshKey, setTokenRefreshKey] = useState(0);
 
   useEffect(() => {
     const controller = new AbortController();
@@ -78,6 +80,7 @@ export default function AccountPage() {
         newPassword,
       );
       setAccount(updated);
+      setTokenRefreshKey(current => current + 1);
       setCurrentPassword('');
       setNewPassword('');
       setConfirmPassword('');
@@ -204,6 +207,8 @@ export default function AccountPage() {
               </button>
             </form>
           </section>
+
+          <PersonalApiTokens key={tokenRefreshKey} refreshKey={tokenRefreshKey} />
 
           <section className={`${styles.card} ${styles.sessionCard}`} aria-labelledby="session-title">
             <div>

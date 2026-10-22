@@ -62,6 +62,21 @@ Configure the production OpenAI credential through the secret environment variab
 - Update a display name, password, and connected sign-in methods.
 - Keep each user's applications, notes, contacts, and events private to their account.
 
+### Personal API tokens
+
+Create and revoke personal API tokens in **Account settings → Personal API tokens**. The secret is shown only once; copy it when created and store it securely as you would a password. Leave expiry blank for a token that does not expire. Revoking a token, changing the account password, or resetting it disables the affected token(s).
+
+Send the token as a bearer credential from a trusted server-side script:
+
+```bash
+curl https://applyline.app/api/applications \
+  -H 'Authorization: Bearer YOUR_PERSONAL_API_TOKEN'
+```
+
+Personal tokens are user-scoped and work only on the API's explicit application, event, and checklist allowlist (plus `GET /api/auth/me`). They cannot manage tokens or access account/security endpoints, admin endpoints, or interview-preparation and development AI endpoints. Token management itself requires cookie sign-in.
+
+Defaults are 10 active tokens per user and 120 requests per minute per token. Configure these with `PersonalApiTokens__MaxActiveTokens` and `PersonalApiTokens__RequestsPerMinute` respectively.
+
 ## Administration
 
 - Review platform activity and account growth.

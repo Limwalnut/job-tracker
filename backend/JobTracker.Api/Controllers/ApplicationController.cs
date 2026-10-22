@@ -4,6 +4,8 @@ using JobTracker.Api.DTOs;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.RateLimiting;
+using JobTracker.Api.Authentication;
 using System.Security.Claims;
 using JobTracker.Api.Services;
 
@@ -22,6 +24,8 @@ public class ApplicationsController : ControllerBase
     }
 
     [HttpGet]
+    [AllowPersonalApiToken]
+    [EnableRateLimiting("personal-api-token")]
     public async Task<ActionResult<List<JobApplication>>> GetApplications()
     {
         var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
@@ -42,6 +46,8 @@ public class ApplicationsController : ControllerBase
     }
 
     [HttpGet("paged")]
+    [AllowPersonalApiToken]
+    [EnableRateLimiting("personal-api-token")]
     public async Task<ActionResult<PagedApplicationsResponse>> GetPagedApplications(
         [FromQuery] int page = 1,
         [FromQuery] int pageSize = 20,
@@ -170,6 +176,8 @@ public class ApplicationsController : ControllerBase
     }
 
     [HttpGet("{id:int}")]
+    [AllowPersonalApiToken]
+    [EnableRateLimiting("personal-api-token")]
     public async Task<ActionResult<JobApplication>> GetApplication(int id)
     {
         var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
@@ -192,6 +200,8 @@ public class ApplicationsController : ControllerBase
     }
 
     [HttpPost]
+    [AllowPersonalApiToken]
+    [EnableRateLimiting("personal-api-token")]
     public async Task<ActionResult<JobApplication>> CreateApplication(
         [FromBody] CreateApplicationRequest request
     )
@@ -229,6 +239,8 @@ public class ApplicationsController : ControllerBase
     }
 
     [HttpPut("{id:int}")]
+    [AllowPersonalApiToken]
+    [EnableRateLimiting("personal-api-token")]
     public async Task<IActionResult> UpdateApplication(
         int id,
         [FromBody] UpdateApplicationRequest request
@@ -272,6 +284,8 @@ public class ApplicationsController : ControllerBase
     }
 
     [HttpDelete("{id:int}")]
+    [AllowPersonalApiToken]
+    [EnableRateLimiting("personal-api-token")]
     public async Task<IActionResult> DeleteApplication(int id)
     {
         var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
@@ -299,6 +313,8 @@ public class ApplicationsController : ControllerBase
     }
 
     [HttpPatch("{id:int}/status")]
+    [AllowPersonalApiToken]
+    [EnableRateLimiting("personal-api-token")]
     public async Task<IActionResult> UpdateApplicationStatus(
         int id,
         [FromBody] UpdateApplicationStatusRequest request
@@ -334,6 +350,8 @@ public class ApplicationsController : ControllerBase
     }
 
     [HttpGet("{id:int}/timeline")]
+    [AllowPersonalApiToken]
+    [EnableRateLimiting("personal-api-token")]
     public async Task<IActionResult> GetStatusTimeline(int id)
     {
         var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
@@ -373,6 +391,8 @@ public class ApplicationsController : ControllerBase
     }
 
     [HttpPost("{id:int}/timeline/undo")]
+    [AllowPersonalApiToken]
+    [EnableRateLimiting("personal-api-token")]
     public async Task<IActionResult> UndoLatestStatusChange(int id)
     {
         var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
