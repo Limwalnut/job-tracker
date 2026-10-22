@@ -10,6 +10,7 @@ import styles from './PersonalApiTokens.module.scss';
 
 interface Props {
   refreshKey: number;
+  hidden: boolean;
 }
 
 interface TokenLimitProblem {
@@ -40,12 +41,13 @@ function formatStatus(status: PersonalApiTokenMetadata['status']) {
   return status.charAt(0).toUpperCase() + status.slice(1);
 }
 
-export default function PersonalApiTokens({ refreshKey }: Props) {
+export default function PersonalApiTokens({ refreshKey, hidden }: Props) {
   const [tokens, setTokens] = useState<PersonalApiTokenMetadata[]>([]);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState('');
   const [name, setName] = useState('');
-  const [expiresAt, setExpiresAt] = useState('');
+  const [expiryDays, setExpiryDays] = useState('30');
+  const [showCreateForm, setShowCreateForm] = useState(false);
   const [createBusy, setCreateBusy] = useState(false);
   const [createError, setCreateError] = useState('');
   const [oneTimeSecret, setOneTimeSecret] = useState<string | null>(null);
@@ -56,6 +58,7 @@ export default function PersonalApiTokens({ refreshKey }: Props) {
   const [revokeError, setRevokeError] = useState('');
   const createInFlight = useRef(false);
   const revokeInFlight = useRef<string | null>(null);
+  const nameInputRef = useRef<HTMLInputElement>(null);
 
   const loadTokens = useCallback(async (signal?: AbortSignal) => {
     setLoading(true);
@@ -80,6 +83,10 @@ export default function PersonalApiTokens({ refreshKey }: Props) {
     };
   }, [loadTokens, refreshKey]);
 
+  useEffect(() => {
+    if (showCreateForm) nameInputRef.current?.focus();
+  }, [showCreateForm]);
+
   async function createToken(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (createInFlight.current || createBusy || oneTimeSecret) return;
@@ -90,15 +97,9 @@ export default function PersonalApiTokens({ refreshKey }: Props) {
       return;
     }
 
-    let expiryIso: string | undefined;
-    if (expiresAt) {
-      const expiry = new Date(expiresAt);
-      if (Number.isNaN(expiry.getTime()) || expiry.getTime() <= Date.now()) {
-        setCreateError('Choose an expiry time in the future.');
-        return;
-      }
-      expiryIso = expiry.toISOString();
-    }
+    const expiryIso = expiryDays === 'never'
+      ? undefined
+      : new Date(Date.now() + Number(expiryDays) * 24 * 60 * 60 * 1000).toISOString();
 
     createInFlight.current = true;
     setCreateBusy(true);
@@ -110,11 +111,12 @@ export default function PersonalApiTokens({ refreshKey }: Props) {
       const created = await createPersonalApiToken(trimmedName, expiryIso);
       const { token, ...metadata } = created;
       setTokens(current => [metadata, ...current.filter(item => item.id !== metadata.id)]);
-      setName('');
-      setExpiresAt('');
       if (token) {
         setOneTimeSecret(token);
         setOneTimeTokenId(metadata.id);
+        setShowCreateForm(false);
+        setName('');
+        setExpiryDays('30');
       } else {
         setCreateError('The token was created, but its one-time secret was missing from the response. Revoke it and create a new token.');
       }
@@ -124,6 +126,13 @@ export default function PersonalApiTokens({ refreshKey }: Props) {
       createInFlight.current = false;
       setCreateBusy(false);
     }
+  }
+
+  function cancelCreate() {
+    setShowCreateForm(false);
+    setName('');
+    setExpiryDays('30');
+    setCreateError('');
   }
 
   async function copySecret() {
@@ -163,16 +172,26 @@ export default function PersonalApiTokens({ refreshKey }: Props) {
   }
 
   return (
-    <section className={`${styles.card} ${styles.tokenCard}`} aria-labelledby="api-tokens-title">
+    <section hidden={hidden} className={`${styles.card} ${styles.tokenCard}`} aria-labelledby="api-tokens-title">
       <div className={styles.cardHeading}>
-        <span className={styles.icon} aria-hidden="true">⌘</span>
         <div>
-          <p>Programmatic access</p>
           <h2 id="api-tokens-title">Personal API tokens</h2>
         </div>
-        <button type="button" className={styles.refreshButton} onClick={() => void loadTokens()} disabled={loading || createBusy || revokingId !== null}>
-          {loading ? 'Refreshing…' : 'Refresh list'}
-        </button>
+        <div className={styles.cardActions}>
+          <button
+            type="button"
+            className={styles.createButton}
+            onClick={() => showCreateForm ? cancelCreate() : setShowCreateForm(true)}
+            disabled={createBusy || Boolean(oneTimeSecret)}
+            aria-expanded={showCreateForm}
+            aria-controls="create-personal-token"
+          >
+            {showCreateForm ? 'Cancel' : 'Create token'}
+          </button>
+          <button type="button" className={styles.refreshButton} onClick={() => void loadTokens()} disabled={loading || createBusy || revokingId !== null}>
+            {loading ? 'Refreshing…' : 'Refresh'}
+          </button>
+        </div>
       </div>
 
       <p className={styles.description}>
@@ -196,37 +215,44 @@ export default function PersonalApiTokens({ refreshKey }: Props) {
         </div>
       </div>}
 
-      <form className={styles.createForm} onSubmit={event => void createToken(event)}>
-        <label>
-          <span>Token name</span>
-          <input
-            type="text"
-            value={name}
-            maxLength={100}
-            required
-            autoComplete="off"
-            placeholder="e.g. Gogo assistant"
-            onChange={event => {
-              setName(event.target.value);
-              setCreateError('');
-            }}
-          />
-        </label>
-        <label>
-          <span>Expires at <small>Optional</small></span>
-          <input
-            type="datetime-local"
-            value={expiresAt}
-            onChange={event => {
-              setExpiresAt(event.target.value);
-              setCreateError('');
-            }}
-          />
-          <small>Leave blank for a token that does not expire.</small>
-        </label>
+      <form id="create-personal-token" hidden={!showCreateForm} className={styles.createForm} onSubmit={event => void createToken(event)}>
+        <label className={styles.nameLabel} htmlFor="personal-token-name">Token name</label>
+        <input
+          ref={nameInputRef}
+          className={styles.nameInput}
+          id="personal-token-name"
+          type="text"
+          value={name}
+          maxLength={100}
+          required
+          autoComplete="off"
+          placeholder="e.g. Gogo assistant"
+          onChange={event => {
+            setName(event.target.value);
+            setCreateError('');
+          }}
+        />
+        <label className={styles.expiryLabel} htmlFor="personal-token-expires-at">Token expiry</label>
+        <select
+          className={styles.expiryInput}
+          id="personal-token-expires-at"
+          value={expiryDays}
+          onChange={event => {
+            setExpiryDays(event.target.value);
+            setCreateError('');
+          }}
+        >
+          <option value="7">7 days</option>
+          <option value="30">30 days</option>
+          <option value="60">60 days</option>
+          <option value="90">90 days</option>
+          <option value="180">180 days</option>
+          <option value="365">1 year</option>
+          <option value="never">Never expires</option>
+        </select>
+        <small className={styles.expiryHelp}>Choose how long this token will work.</small>
         {createError && <p className={styles.error} role="alert">{createError}</p>}
-        {oneTimeSecret && <p className={styles.formHint}>Dismiss the token reveal before creating another token.</p>}
-        <button type="submit" disabled={createBusy || loading || Boolean(oneTimeSecret)}>
+        <button className={styles.submitButton} type="submit" disabled={createBusy || loading}>
           {createBusy ? 'Creating…' : 'Create token'}
         </button>
       </form>
@@ -268,6 +294,7 @@ export default function PersonalApiTokens({ refreshKey }: Props) {
                 }}>Revoke</button>)}
             </li>)}
           </ul>}
+
     </section>
   );
 }

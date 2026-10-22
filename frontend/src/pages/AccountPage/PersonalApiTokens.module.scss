@@ -5,7 +5,6 @@ $muted: #68738b;
 $text: #172033;
 
 .card {
-  grid-column: 1 / -1;
   min-width: 0;
   padding: clamp(22px, 3vw, 32px);
   border: 1px solid $border;
@@ -22,9 +21,13 @@ $text: #172033;
   border-bottom: 1px solid #e7eaf2;
 
   > div { min-width: 0; flex: 1; }
-  p { margin: 0 0 3px; color: $accent; font-size: .66rem; font-weight: 750; letter-spacing: .12em; text-transform: uppercase; }
-  h2 { margin: 0; color: $navy; font-size: 1.25rem; }
+  h2 { margin: 0; color: $navy; font-size: 1.2rem; }
 }
+
+.cardActions { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 8px; }
+.createButton { min-height: 40px; padding: 8px 14px; border: 1px solid $accent; border-radius: 7px; color: #fff; background: $accent; font: inherit; font-size: .8rem; font-weight: 700; cursor: pointer; }
+.createButton:hover:not(:disabled) { background: #3329a5; }
+.createButton:disabled { opacity: .6; cursor: not-allowed; }
 
 .icon {
   display: grid;
@@ -96,18 +99,28 @@ $text: #172033;
 .createForm {
   display: grid;
   grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) auto;
-  align-items: end;
+  grid-template-areas:
+    "name-label expiry-label ."
+    "name-input expiry-input submit"
+    ". expiry-help .";
+  grid-template-rows: auto 42px auto;
+  align-items: start;
   gap: 14px;
   margin-top: 20px;
 
-  label { display: grid; gap: 8px; min-width: 0; }
-  label > span { color: $text; font-size: .83rem; font-weight: 700; }
-  label > span small,
-  label > small { color: $muted; font-size: .74rem; font-weight: 400; }
-  input { width: 100%; min-height: 42px; min-width: 0; padding: 9px 11px; border: 1px solid #bfc8d8; border-radius: 7px; color: $text; background: #fff; font: inherit; font-size: .9rem; }
-  input:focus { border-color: $accent; outline: 0; box-shadow: 0 0 0 3px rgb(67 56 202 / 12%); }
-  > button { min-height: 42px; white-space: nowrap; }
+  label { min-width: 0; color: $text; font-size: .83rem; font-weight: 700; }
+  label small { color: $muted; font-size: .74rem; font-weight: 400; }
+  input, select { width: 100%; min-height: 42px; min-width: 0; padding: 9px 11px; border: 1px solid #bfc8d8; border-radius: 7px; color: $text; background: #fff; font: inherit; font-size: .9rem; }
+  input:focus, select:focus { border-color: $accent; outline: 0; box-shadow: 0 0 0 3px rgb(67 56 202 / 12%); }
+  > button { grid-area: submit; align-self: start; min-height: 42px; white-space: nowrap; }
 }
+.createForm[hidden] { display: none; }
+
+.nameLabel { grid-area: name-label; }
+.nameInput { grid-area: name-input; }
+.expiryLabel { grid-area: expiry-label; }
+.expiryInput { grid-area: expiry-input; }
+.expiryHelp { grid-area: expiry-help; color: $muted; font-size: .74rem; }
 
 .error,
 .formHint { grid-column: 1 / -1; margin: 0; font-size: .8rem; line-height: 1.45; }
@@ -167,8 +180,16 @@ $text: #172033;
 .inlineButton { border: 0; padding: 0; color: $accent; background: transparent; font: inherit; text-decoration: underline; cursor: pointer; }
 
 @media (max-width: 760px) {
-  .createForm { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
-  .createForm > button { grid-column: 1 / -1; justify-self: start; }
+  .createForm {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    grid-template-areas:
+      "name-label expiry-label"
+      "name-input expiry-input"
+      ". expiry-help"
+      "submit submit";
+    grid-template-rows: auto 42px auto auto;
+  }
+  .createForm > button { justify-self: start; }
   .tokenRow { grid-template-columns: minmax(0, 1fr) auto; }
   .tokenMetadata { grid-column: 1 / -1; grid-row: 2; }
   .confirmation { grid-column: 1 / -1; justify-items: start; }
@@ -177,11 +198,21 @@ $text: #172033;
 @media (max-width: 520px) {
   .card { padding: 20px; }
   .cardHeading { flex-wrap: wrap; }
-  .refreshButton { margin-left: 62px; }
+  .cardHeading { justify-content: space-between; }
+  .cardActions { justify-content: flex-start; }
   .secretNotice { flex-direction: column; }
   .secretActions { flex-direction: row; flex-wrap: wrap; }
-  .createForm { grid-template-columns: 1fr; }
-  .createForm > button { grid-column: auto; }
+  .createForm {
+    grid-template-columns: 1fr;
+    grid-template-areas:
+      "name-label"
+      "name-input"
+      "expiry-label"
+      "expiry-input"
+      "expiry-help"
+      "submit";
+    grid-template-rows: repeat(6, auto);
+  }
   .tokenRow { grid-template-columns: minmax(0, 1fr); }
   .tokenMetadata { grid-column: auto; grid-row: auto; grid-template-columns: 1fr; }
   .revokeButton,
