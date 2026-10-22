@@ -24,3 +24,19 @@ test('workflow reserves attempts only behind the PM event prefilter and serializ
   assert.match(workflow, /name: Shut down the Codex API key proxy\n\s+if: always\(\)/);
   assert.match(workflow, /name: Post fixed attempt status/);
 });
+
+test('only the gate and final status jobs can write pull request comments', async () => {
+  const workflow = await readFile(join(ROOT, 'workflows', 'review-autofix.yml'), 'utf8');
+  const gate = workflow.match(/^  gate:\n([\s\S]*?)(?=^  model:)/m)?.[1];
+  const finalStatus = workflow.slice(workflow.indexOf('  final-status:\n'));
+  assert.ok(gate);
+  assert.ok(finalStatus.startsWith('  final-status:\n'));
+  assert.ok(gate.includes('    permissions:\n      contents: read\n      pull-requests: write\n'));
+  assert.doesNotMatch(gate, /issues: write/);
+  assert.ok(finalStatus.includes('    permissions:\n      contents: read\n      pull-requests: write\n'));
+  assert.doesNotMatch(finalStatus, /issues: write/);
+  const model = workflow.match(/^  model:\n([\s\S]*?)(?=^  validate:)/m)?.[1];
+  assert.ok(model);
+  assert.ok(model.includes('    permissions:\n      contents: read\n      pull-requests: read\n      issues: read\n'));
+  assert.doesNotMatch(model, /^\s+[a-z-]+: write\s*$/m);
+});
