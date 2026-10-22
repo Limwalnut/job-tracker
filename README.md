@@ -84,3 +84,23 @@ Defaults are 10 active tokens per user and 120 requests per minute per token. Co
 - See application and event usage totals without exposing private application content.
 - Disable or restore account access when needed.
 - Keep a record of administrator account actions.
+
+## Automated PM review fixes
+
+The GitHub Actions workflow `.github/workflows/review-autofix.yml` can prepare and push a validated fix to an existing PR after a qualifying PM review. It runs only for an open, non-draft PR authored by `Limwalnut`, from a same-repository `codex/req-###` branch into `main`, when the latest PM review refers to a `REQ-###` identifier present in the PR title or description and requests changes on the current head commit. The workflow rejects PRs that change workflow, execution, deployment, agent instruction, secret-bearing, or generated paths, so it cannot modify its own controls.
+
+Before enabling it, merge the workflow into `main` and add the repository Actions secret `OPENAI_API_KEY`. The workflow declares its required `GITHUB_TOKEN` permissions per job. The Codex model defaults to `gpt-6-luna` at medium effort; set the repository Actions variable `CODEX_MODEL` to override it. The workflow pins the official Codex GitHub Action, its CLI version, and GitHub Actions dependencies.
+
+Use a standalone verdict line in each PM review body, for example:
+
+```text
+## Review: REQ-001
+
+<review findings>
+
+**Verdict: changes requested.**
+```
+
+Only one standalone verdict is accepted: `Verdict: changes requested` or `Verdict: ready`, optionally surrounded by `**` and ending with a period. Missing, conflicting, quoted, or prose-appended verdicts are ignored. Reviews submitted before this workflow is enabled are not replayed; submit a new review after activation to start an attempt.
+
+Each qualifying review reserves one durable attempt before the model runs. Failed model or validation runs count too. A PR gets at most three attempts over its lifetime; a later qualifying review after the limit receives one handoff comment for manual follow-up. Codex receives no GitHub write token. A separate credential-free job validates the patch, and trusted publish code rechecks the review and head before a normal non-force push. Each reserved attempt receives a fixed-template status comment when the workflow finishes. The workflow never merges or deploys. A `GITHUB_TOKEN` push does not trigger other workflows, so the PM review process must wait for the pushed head and request another review if changes remain. A new submitted review is the only trigger; the workflow does not watch or replay existing reviews automatically.
