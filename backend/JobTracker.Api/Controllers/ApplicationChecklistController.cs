@@ -3,6 +3,8 @@ using JobTracker.Api.Data;
 using JobTracker.Api.DTOs;
 using JobTracker.Api.Models;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.RateLimiting;
+using JobTracker.Api.Authentication;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
@@ -14,6 +16,8 @@ namespace JobTracker.Api.Controllers;
 public sealed class ApplicationChecklistController(AppDbContext context) : ControllerBase
 {
     [HttpGet]
+    [AllowPersonalApiToken]
+    [EnableRateLimiting("personal-api-token")]
     public async Task<IActionResult> GetItems(int applicationId)
     {
         var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
@@ -37,6 +41,8 @@ public sealed class ApplicationChecklistController(AppDbContext context) : Contr
     }
 
     [HttpPost]
+    [AllowPersonalApiToken]
+    [EnableRateLimiting("personal-api-token")]
     public async Task<IActionResult> CreateItem(int applicationId, CreateChecklistItemRequest request)
     {
         var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);

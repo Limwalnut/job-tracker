@@ -3,6 +3,7 @@ using Microsoft.EntityFrameworkCore;
 using System.Text.Json.Serialization;
 using JobTracker.Api.Models;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.Authentication;
 using System.Security.Claims;
 using Microsoft.AspNetCore.DataProtection;
 using Microsoft.AspNetCore.DataProtection.EntityFrameworkCore;
@@ -10,6 +11,7 @@ using Microsoft.AspNetCore.HttpOverrides;
 using JobTracker.Api.Authentication;
 using JobTracker.Api.Services;
 using System.Threading.RateLimiting;
+using Microsoft.AspNetCore.RateLimiting;
 using OpenAI.Responses;
 using System.Text.Json;
 
@@ -65,7 +67,8 @@ builder.Services.AddDataProtection()
 builder.Services
     .AddIdentityApiEndpoints<ApplicationUser>()
     .AddRoles<IdentityRole>()
-    .AddEntityFrameworkStores<AppDbContext>();
+    .AddEntityFrameworkStores<AppDbContext>()
+    .AddUserManager<PersonalApiTokenUserManager>();
 
 builder.Services.Configure<DataProtectionTokenProviderOptions>(options =>
 {
@@ -112,6 +115,33 @@ if (googleAuthenticationEnabled)
         });
 }
 
+builder.Services.AddAuthentication(options =>
+{
+    options.DefaultScheme = PersonalApiTokenClaims.PolicyScheme;
+    options.DefaultAuthenticateScheme = PersonalApiTokenClaims.PolicyScheme;
+    options.DefaultChallengeScheme = PersonalApiTokenClaims.PolicyScheme;
+    options.DefaultForbidScheme = PersonalApiTokenClaims.PolicyScheme;
+})
+    .AddScheme<AuthenticationSchemeOptions, PersonalApiTokenAuthenticationHandler>(
+        PersonalApiTokenClaims.Scheme,
+        _ => { })
+    .AddPolicyScheme(
+        PersonalApiTokenClaims.PolicyScheme,
+        PersonalApiTokenClaims.PolicyScheme,
+        options =>
+        {
+            options.ForwardDefaultSelector = context =>
+            {
+                var authorization = context.Request.Headers.Authorization.ToString();
+                if (PersonalApiTokenClaims.TryGetPersonalBearerToken(authorization, out _))
+                {
+                    return PersonalApiTokenClaims.Scheme;
+                }
+
+                return PersonalApiTokenClaims.IdentityBearerAndApplicationScheme;
+            };
+        });
+
 builder.Services.ConfigureApplicationCookie(options =>
 {
     options.Cookie.Name = "Applyline.Auth";
@@ -141,7 +171,34 @@ builder.Services.AddRateLimiter(options =>
                 QueueLimit = 0,
                 Window = TimeSpan.FromMinutes(5)
             }));
+    options.AddPolicy("personal-api-token", context =>
+    {
+        if (context.User.FindFirst(PersonalApiTokenClaims.AuthenticationMethod)?.Value !=
+                PersonalApiTokenClaims.PersonalToken ||
+            context.User.FindFirst(PersonalApiTokenClaims.TokenId)?.Value is not { } tokenId)
+        {
+            return RateLimitPartition.GetNoLimiter("not-personal-token");
+        }
+
+        var tokenOptions = context.RequestServices
+            .GetRequiredService<Microsoft.Extensions.Options.IOptions<PersonalApiTokenOptions>>();
+        return RateLimitPartition.GetFixedWindowLimiter(
+            tokenId,
+            _ => new FixedWindowRateLimiterOptions
+            {
+                AutoReplenishment = true,
+                PermitLimit = tokenOptions.Value.RequestsPerMinute,
+                QueueLimit = 0,
+                Window = TimeSpan.FromMinutes(1)
+            });
+    });
 });
+
+builder.Services.AddOptions<PersonalApiTokenOptions>()
+    .BindConfiguration(PersonalApiTokenOptions.SectionName)
+    .ValidateDataAnnotations()
+    .ValidateOnStart();
+builder.Services.AddScoped<PersonalApiTokenService>();
 
 builder.Services.AddOptions<AiAgentQuotaOptions>()
     .BindConfiguration(AiAgentQuotaOptions.SectionName)
@@ -162,8 +219,6 @@ var forwardedHeadersOptions = new ForwardedHeadersOptions
 forwardedHeadersOptions.KnownIPNetworks.Clear();
 forwardedHeadersOptions.KnownProxies.Clear();
 app.UseForwardedHeaders(forwardedHeadersOptions);
-app.UseRateLimiter();
-
 app.Use(async (context, next) =>
 {
     var path = context.Request.Path;
@@ -254,6 +309,31 @@ app.UseAuthentication();
 
 app.Use(async (context, next) =>
 {
+    if (PersonalApiTokenClaims.TryGetPersonalBearerToken(
+            context.Request.Headers.Authorization.ToString(),
+            out _))
+    {
+        var isValidPersonalToken = context.User.HasClaim(
+            PersonalApiTokenClaims.AuthenticationMethod,
+            PersonalApiTokenClaims.PersonalToken);
+        if (!isValidPersonalToken)
+        {
+            context.Response.StatusCode = StatusCodes.Status401Unauthorized;
+            return;
+        }
+
+        if (context.GetEndpoint()?.Metadata.GetMetadata<AllowPersonalApiTokenAttribute>() is null)
+        {
+            context.Response.StatusCode = StatusCodes.Status403Forbidden;
+            return;
+        }
+    }
+
+    await next();
+});
+
+app.Use(async (context, next) =>
+{
     if (context.Request.Path.StartsWithSegments("/api") &&
         context.User.Identity?.IsAuthenticated == true)
     {
@@ -269,16 +349,24 @@ app.Use(async (context, next) =>
 
             if (accountState is null || accountState.DisabledAtUtc is not null)
             {
-                var signInManager = context.RequestServices
-                    .GetRequiredService<SignInManager<ApplicationUser>>();
-                await signInManager.SignOutAsync();
+                if (context.User.FindFirst(PersonalApiTokenClaims.AuthenticationMethod)?.Value !=
+                    PersonalApiTokenClaims.PersonalToken)
+                {
+                    var signInManager = context.RequestServices
+                        .GetRequiredService<SignInManager<ApplicationUser>>();
+                    await signInManager.SignOutAsync();
+                }
+
                 context.Response.StatusCode = StatusCodes.Status401Unauthorized;
                 return;
             }
 
             var now = DateTimeOffset.UtcNow;
-            if (accountState.LastSeenAtUtc is null ||
-                accountState.LastSeenAtUtc < now.AddMinutes(-5))
+            var isPersonalToken = context.User.FindFirst(PersonalApiTokenClaims.AuthenticationMethod)?.Value ==
+                PersonalApiTokenClaims.PersonalToken;
+            if (!isPersonalToken &&
+                (accountState.LastSeenAtUtc is null ||
+                 accountState.LastSeenAtUtc < now.AddMinutes(-5)))
             {
                 await dbContext.Users
                     .Where(user => user.Id == userId)
@@ -291,6 +379,7 @@ app.Use(async (context, next) =>
     await next();
 });
 
+app.UseRateLimiter();
 app.UseAuthorization();
 var auth = app.MapGroup("/api/auth");
 
@@ -317,9 +406,17 @@ auth.MapGet("/me", async (
         id = user.Id,
         email = user.Email,
         displayName = user.DisplayName,
-        isAdmin = await userManager.IsInRoleAsync(user, "Admin")
+        isAdmin = principal.HasClaim(
+            PersonalApiTokenClaims.AuthenticationMethod,
+            PersonalApiTokenClaims.PersonalToken)
+            ? false
+            : await userManager.IsInRoleAsync(user, "Admin")
     });
-}).RequireAuthorization();
+})
+    .WithMetadata(
+        new AllowPersonalApiTokenAttribute(),
+        new EnableRateLimitingAttribute("personal-api-token"))
+    .RequireAuthorization();
 
 auth.MapPost("/logout", async (
     SignInManager<ApplicationUser> signInManager) =>
@@ -642,3 +739,7 @@ app.MapPost("/api/applications/{applicationId:int:min(1)}/interview-preparation"
 }).RequireAuthorization();
 
 app.Run();
+
+public partial class Program
+{
+}

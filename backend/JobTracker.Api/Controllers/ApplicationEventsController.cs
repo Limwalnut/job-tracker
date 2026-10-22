@@ -4,6 +4,8 @@ using JobTracker.Api.Models;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.RateLimiting;
+using JobTracker.Api.Authentication;
 using System.Security.Claims;
 using JobTracker.Api.Services;
 
@@ -22,6 +24,8 @@ public class ApplicationEventsController : ControllerBase
     }
 
     [HttpPost]
+    [AllowPersonalApiToken]
+    [EnableRateLimiting("personal-api-token")]
     public async Task<IActionResult> CreateEvent(
         int applicationId,
         [FromBody] CreateApplicationEventRequest request)
@@ -186,6 +190,8 @@ public class ApplicationEventsController : ControllerBase
     }
 
     [HttpGet]
+    [AllowPersonalApiToken]
+    [EnableRateLimiting("personal-api-token")]
     public async Task<IActionResult> GetEvents(int applicationId)
     {
         var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);

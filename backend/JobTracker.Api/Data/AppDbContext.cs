@@ -28,6 +28,8 @@ public class AppDbContext :
 
     public DbSet<AiAgentRun> AiAgentRuns { get; set; } = null!;
 
+    public DbSet<PersonalApiToken> PersonalApiTokens { get; set; } = null!;
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);
@@ -66,6 +68,18 @@ public class AppDbContext :
             .HasForeignKey(run => run.UserId)
             .OnDelete(DeleteBehavior.Cascade);
         aiRunEntity.HasIndex(run => new { run.UserId, run.StartedAtUtc });
+
+        var personalApiTokenEntity = modelBuilder.Entity<PersonalApiToken>();
+        personalApiTokenEntity.Property(token => token.UserId).HasMaxLength(450);
+        personalApiTokenEntity.Property(token => token.Name).HasMaxLength(100);
+        personalApiTokenEntity.Property(token => token.SecretHash).HasMaxLength(64);
+        personalApiTokenEntity.Property(token => token.DisplayPrefix).HasMaxLength(32);
+        personalApiTokenEntity.HasOne(token => token.User)
+            .WithMany()
+            .HasForeignKey(token => token.UserId)
+            .OnDelete(DeleteBehavior.Cascade);
+        personalApiTokenEntity.HasIndex(token => token.SecretHash).IsUnique();
+        personalApiTokenEntity.HasIndex(token => new { token.UserId, token.CreatedAtUtc });
 
         modelBuilder.Entity<JobApplication>()
             .Property(application => application.Status)

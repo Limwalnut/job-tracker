@@ -1,0 +1,189 @@
+$navy: #17205d;
+$accent: #4338ca;
+$border: #dce2ee;
+$muted: #68738b;
+$text: #172033;
+
+.card {
+  grid-column: 1 / -1;
+  min-width: 0;
+  padding: clamp(22px, 3vw, 32px);
+  border: 1px solid $border;
+  border-radius: 14px;
+  background: #fff;
+  box-shadow: 0 10px 30px rgb(23 32 93 / 5%);
+}
+
+.cardHeading {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding-bottom: 18px;
+  border-bottom: 1px solid #e7eaf2;
+
+  > div { min-width: 0; flex: 1; }
+  p { margin: 0 0 3px; color: $accent; font-size: .66rem; font-weight: 750; letter-spacing: .12em; text-transform: uppercase; }
+  h2 { margin: 0; color: $navy; font-size: 1.25rem; }
+}
+
+.icon {
+  display: grid;
+  width: 48px;
+  height: 48px;
+  flex: none;
+  place-items: center;
+  border-radius: 12px;
+  color: $accent;
+  background: #eef0ff;
+  font-size: 1.3rem;
+  font-weight: 800;
+}
+
+.refreshButton,
+.secondaryButton,
+.revokeButton,
+.secretActions button,
+.createForm > button,
+.confirmation button {
+  min-height: 40px;
+  padding: 8px 14px;
+  border: 1px solid #bfc8d8;
+  border-radius: 7px;
+  color: $navy;
+  background: #fff;
+  font: inherit;
+  font-size: .8rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.refreshButton:hover:not(:disabled),
+.secondaryButton:hover:not(:disabled),
+.revokeButton:hover:not(:disabled) { border-color: $navy; background: #f5f6fb; }
+.refreshButton:disabled,
+.secondaryButton:disabled,
+.revokeButton:disabled,
+.secretActions button:disabled,
+.createForm > button:disabled,
+.confirmation button:disabled { opacity: .6; cursor: wait; }
+
+.description { margin: 16px 0 0; color: $muted; font-size: .84rem; line-height: 1.5; }
+
+.secretNotice {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 18px;
+  margin-top: 18px;
+  padding: 16px;
+  border: 1px solid #a6dbc9;
+  border-left: 4px solid #2b8b72;
+  border-radius: 9px;
+  background: #ecf8f2;
+
+  strong { color: #145843; }
+  p { margin: 5px 0 10px; color: #3d6456; font-size: .82rem; line-height: 1.45; }
+  code { display: block; max-width: 100%; overflow-wrap: anywhere; color: #173b30; font-size: .9rem; user-select: all; }
+  small { display: block; margin-top: 8px; color: #3d6456; font-size: .76rem; }
+}
+
+.secretActions { display: flex; flex: none; flex-direction: column; gap: 8px; }
+.secretActions button:first-child,
+.createForm > button { border-color: $accent; color: #fff; background: $accent; }
+.secretActions button:first-child:hover:not(:disabled),
+.createForm > button:hover:not(:disabled) { background: #3329a5; }
+
+.createForm {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) auto;
+  align-items: end;
+  gap: 14px;
+  margin-top: 20px;
+
+  label { display: grid; gap: 8px; min-width: 0; }
+  label > span { color: $text; font-size: .83rem; font-weight: 700; }
+  label > span small,
+  label > small { color: $muted; font-size: .74rem; font-weight: 400; }
+  input { width: 100%; min-height: 42px; min-width: 0; padding: 9px 11px; border: 1px solid #bfc8d8; border-radius: 7px; color: $text; background: #fff; font: inherit; font-size: .9rem; }
+  input:focus { border-color: $accent; outline: 0; box-shadow: 0 0 0 3px rgb(67 56 202 / 12%); }
+  > button { min-height: 42px; white-space: nowrap; }
+}
+
+.error,
+.formHint { grid-column: 1 / -1; margin: 0; font-size: .8rem; line-height: 1.45; }
+.error { color: #9d1d2d; }
+.formHint { color: $muted; }
+
+.tokenListHeading {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  margin-top: 26px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid #e7eaf2;
+
+  h3 { margin: 0; color: $navy; font-size: 1rem; }
+  span { color: $muted; font-size: .76rem; }
+}
+
+.state { margin: 14px 0 0; color: $muted; font-size: .84rem; }
+.tokenList { display: grid; gap: 10px; margin: 12px 0 0; padding: 0; list-style: none; }
+
+.tokenRow {
+  display: grid;
+  grid-template-columns: minmax(150px, .9fr) minmax(0, 2fr) auto;
+  align-items: center;
+  gap: 14px;
+  padding: 14px;
+  border: 1px solid $border;
+  border-radius: 9px;
+  background: #fbfcff;
+}
+
+.tokenIdentity { display: grid; justify-items: start; gap: 5px; min-width: 0; overflow-wrap: anywhere; }
+.tokenIdentity strong { color: $text; font-size: .86rem; }
+.tokenIdentity code { color: $muted; font-size: .76rem; }
+
+.status { padding: 4px 8px; border-radius: 999px; color: #176147; background: #dff5e9; font-size: .68rem; font-weight: 750; }
+.status[data-status='revoked'] { color: #8f3140; background: #fbe7ea; }
+.status[data-status='expired'] { color: #815a11; background: #fff1cf; }
+
+.tokenMetadata {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px 14px;
+  margin: 0;
+
+  div { min-width: 0; }
+  dt { color: $muted; font-size: .7rem; }
+  dd { margin: 3px 0 0; color: $text; font-size: .76rem; overflow-wrap: anywhere; }
+}
+
+.revokeButton { color: #9d1d2d; }
+.confirmation { display: grid; justify-items: end; gap: 7px; min-width: 140px; }
+.confirmation span { color: $muted; font-size: .72rem; line-height: 1.35; }
+.confirmation .dangerButton { border-color: #a62a38; color: #fff; background: #a62a38; }
+.confirmation .dangerButton:hover:not(:disabled) { background: #8d1e2c; }
+.inlineButton { border: 0; padding: 0; color: $accent; background: transparent; font: inherit; text-decoration: underline; cursor: pointer; }
+
+@media (max-width: 760px) {
+  .createForm { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
+  .createForm > button { grid-column: 1 / -1; justify-self: start; }
+  .tokenRow { grid-template-columns: minmax(0, 1fr) auto; }
+  .tokenMetadata { grid-column: 1 / -1; grid-row: 2; }
+  .confirmation { grid-column: 1 / -1; justify-items: start; }
+}
+
+@media (max-width: 520px) {
+  .card { padding: 20px; }
+  .cardHeading { flex-wrap: wrap; }
+  .refreshButton { margin-left: 62px; }
+  .secretNotice { flex-direction: column; }
+  .secretActions { flex-direction: row; flex-wrap: wrap; }
+  .createForm { grid-template-columns: 1fr; }
+  .createForm > button { grid-column: auto; }
+  .tokenRow { grid-template-columns: minmax(0, 1fr); }
+  .tokenMetadata { grid-column: auto; grid-row: auto; grid-template-columns: 1fr; }
+  .revokeButton,
+  .confirmation { justify-self: start; }
+}

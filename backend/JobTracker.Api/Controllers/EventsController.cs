@@ -4,6 +4,8 @@ using JobTracker.Api.Models;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.RateLimiting;
+using JobTracker.Api.Authentication;
 using System.Security.Claims;
 using JobTracker.Api.Services;
 
@@ -22,6 +24,8 @@ public class EventsController : ControllerBase
     }
 
     [HttpGet]
+    [AllowPersonalApiToken]
+    [EnableRateLimiting("personal-api-token")]
     public async Task<IActionResult> GetEvents(
         [FromQuery] DateTimeOffset? from, [FromQuery] DateTimeOffset? to,
         [FromQuery] bool includeCancelled = false)
@@ -58,6 +62,8 @@ public class EventsController : ControllerBase
     }
 
     [HttpGet("{id:int}")]
+    [AllowPersonalApiToken]
+    [EnableRateLimiting("personal-api-token")]
     public async Task<IActionResult> GetEvent(int id)
     {
         var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
@@ -84,6 +90,8 @@ public class EventsController : ControllerBase
     }
 
     [HttpPut("{id:int}")]
+    [AllowPersonalApiToken]
+    [EnableRateLimiting("personal-api-token")]
     public async Task<IActionResult> UpdateEvent(int id, UpdateApplicationEventRequest request)
     {
         var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
@@ -158,6 +166,8 @@ public class EventsController : ControllerBase
     }
 
     [HttpDelete("{id:int}")]
+    [AllowPersonalApiToken]
+    [EnableRateLimiting("personal-api-token")]
     public async Task<IActionResult> DeleteEvent(
         int id,
         [FromQuery] bool revertApplicationStatus = false)
