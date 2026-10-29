@@ -441,7 +441,8 @@ if (!app.Environment.IsDevelopment())
         "/",
         "/privacy",
         "/terms",
-        "/guide/job-application-tracking"
+        "/guide/job-application-tracking",
+        "/docs/personal-api-tokens"
     })
     {
         var pagePath = publicPath;
