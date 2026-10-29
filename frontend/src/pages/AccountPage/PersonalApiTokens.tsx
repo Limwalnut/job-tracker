@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState, type FormEvent } from 'react';
 import { ApiError } from '../../api/client';
+import { Link } from 'react-router';
 import {
   createPersonalApiToken,
   getPersonalApiTokens,
@@ -195,13 +196,16 @@ export default function PersonalApiTokens({ refreshKey, hidden }: Props) {
       </div>
 
       <p className={styles.description}>
-        Create a token for scripts that access your Applyline data. Treat it like a password. The secret is shown only once.
+        Create a token for a trusted server-side script or assistant to use your application, event and checklist API as you.
+        Treat the secret like a password: it is shown only once.{' '}
+        <Link to="/docs/personal-api-tokens">Learn how to use API tokens</Link>.
       </p>
 
       {oneTimeSecret && <div className={styles.secretNotice} role="status" aria-live="polite">
         <div>
           <strong>Copy your new token now</strong>
-          <p>You will not be able to see this secret again after you dismiss this message or leave the page.</p>
+          <p>You will not be able to see this secret again after you dismiss this message or leave the page.{' '}
+            <Link to="/docs/personal-api-tokens#limits">Read the token safety guide</Link> before sharing it with an integration.</p>
           <code>{oneTimeSecret}</code>
           {copyMessage && <small>{copyMessage}</small>}
         </div>
