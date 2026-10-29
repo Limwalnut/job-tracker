@@ -19,6 +19,7 @@ export default function SiteFooter() {
             <a href="/#how-it-works">How it works</a>
             <a href="/#why-applyline">Why Applyline</a>
             <Link to="/guide/job-application-tracking">Guide</Link>
+            <Link to="/docs/personal-api-tokens">API tokens</Link>
           </div>
           <div>
             <span>Company</span>

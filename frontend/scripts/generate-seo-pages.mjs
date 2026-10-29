@@ -29,6 +29,11 @@ const pages = [
     title: 'How to Track Job Applications | Applyline',
     description: 'A practical way to track job applications, interviews and follow-ups without losing the details behind each opportunity.',
   },
+  {
+    path: '/docs/personal-api-tokens',
+    title: 'Personal API Tokens | Applyline',
+    description: 'Create and use personal API tokens to connect trusted scripts to your Applyline applications, events and checklists.',
+  },
 ];
 
 const spaShell = replaceOne(

@@ -7,7 +7,7 @@ export default function PrivacyPage() {
       description="Learn how Applyline collects, uses and protects account and job-search information."
       eyebrow="Your information"
       introduction="This policy explains what information Applyline collects, why we use it and the choices available to you."
-      lastUpdated="22 September 2026"
+      lastUpdated="29 October 2026"
       title="Privacy Policy"
     >
       <section>
@@ -32,6 +32,11 @@ export default function PrivacyPage() {
           needed to authenticate you, such as your Google account identifier and
           verified email address. We do not request access to Gmail, Google Drive,
           contacts or calendar data for sign-in.
+        </p>
+        <p>
+          You may create personal API tokens in Account settings. We store a cryptographic
+          hash and a short display prefix for each token, not its plaintext secret. The
+          secret is shown only once, when you create the token.
         </p>
 
         <h3>Job-search information</h3>
@@ -78,6 +83,13 @@ export default function PrivacyPage() {
           Cloudflare may use essential security technologies to protect and deliver
           the website. Cloudflare Web Analytics does not use cookies to identify
           visitors.
+        </p>
+        <p>
+          A personal API token lets a caller act as you on the documented application-data
+          API. Keep tokens private. You are responsible for the scripts and third parties
+          you give a token to, including their use of your account data. You can revoke
+          tokens at any time from Account settings. Changing or resetting your password
+          revokes all your tokens.
         </p>
       </section>
 

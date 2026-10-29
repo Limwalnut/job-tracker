@@ -64,7 +64,7 @@ Configure the production OpenAI credential through the secret environment variab
 
 ### Personal API tokens
 
-Create and revoke personal API tokens in **Account settings → Personal API tokens**. The secret is shown only once; copy it when created and store it securely as you would a password. Leave expiry blank for a token that does not expire. Revoking a token, changing the account password, or resetting it disables the affected token(s).
+The full guide and exact 20-route allowlist are at [Personal API tokens](https://applyline.app/docs/personal-api-tokens). Create and revoke tokens in **Account settings → Personal API tokens**. Choose an expiry, including **Never expires**. The secret is shown only once; copy it immediately and store it securely as you would a password. Revoke a token when an integration is finished. Changing or resetting the account password revokes all tokens; a disabled account cannot use its tokens until re-enabled.
 
 Send the token as a bearer credential from a trusted server-side script:
 
@@ -73,9 +73,9 @@ curl https://applyline.app/api/applications \
   -H 'Authorization: Bearer YOUR_PERSONAL_API_TOKEN'
 ```
 
-Personal tokens are user-scoped and work only on the API's explicit application, event, and checklist allowlist (plus `GET /api/auth/me`). They cannot manage tokens or access account/security endpoints, admin endpoints, or interview-preparation and development AI endpoints. Token management itself requires cookie sign-in.
+Personal tokens act as the account owner and work only on the documented application, event, and checklist allowlist (plus `GET /api/auth/me`). Request and response JSON matches the web app, including string-named enums. Any route not on the allowlist is refused; tokens cannot manage tokens or access account/security endpoints, admin endpoints, or interview-preparation and development AI endpoints. Token management itself requires cookie sign-in. Keep tokens in trusted server-side environments, never in public source or browser code, and do not paste secrets into chat messages or logs. Use a separate token for each integration.
 
-Defaults are 10 active tokens per user and 120 requests per minute per token. Configure these with `PersonalApiTokens__MaxActiveTokens` and `PersonalApiTokens__RequestsPerMinute` respectively.
+Defaults are 10 active tokens per user and 120 requests per minute per token; excess requests return HTTP 429. Configure these with `PersonalApiTokens__MaxActiveTokens` and `PersonalApiTokens__RequestsPerMinute` respectively.
 
 ## Administration
 

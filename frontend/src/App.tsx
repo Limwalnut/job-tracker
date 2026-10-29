@@ -5,6 +5,7 @@ import RequireAuth from "./auth/RequireAuth";
 import PrivacyPage from "./pages/PrivacyPage/PrivacyPage";
 import TermsPage from "./pages/TermsPage/TermsPage";
 import TrackingGuidePage from "./pages/TrackingGuidePage/TrackingGuidePage";
+import PersonalApiTokenDocsPage from "./pages/PersonalApiTokenDocsPage/PersonalApiTokenDocsPage";
 import PageMetadata from "./components/PageMetadata/PageMetadata";
 import RequireAdmin from './auth/RequireAdmin';
 
@@ -32,6 +33,7 @@ function App() {
       <Route path="/privacy" element={<PrivacyPage />} />
       <Route path="/terms" element={<TermsPage />} />
       <Route path="/guide/job-application-tracking" element={<TrackingGuidePage />} />
+      <Route path="/docs/personal-api-tokens" element={<PersonalApiTokenDocsPage />} />
       <Route
         path="/login"
         element={<><PageMetadata canonicalPath="/login" description="Sign in to Applyline." noIndex title="Sign in | Applyline" /><Suspense fallback={null}><LoginPage /></Suspense></>}
